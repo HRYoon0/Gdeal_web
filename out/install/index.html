@@ -307,34 +307,37 @@
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
       deferredPrompt = e;
-
-      // 안드로이드: 설치 버튼 표시, 가이드 숨김
-      installButton.classList.add('show');
-      androidGuide.classList.remove('show');
     });
 
     // 설치 버튼 클릭
     installButton.addEventListener('click', async () => {
-      if (!deferredPrompt) return;
+      if (deferredPrompt) {
+        // beforeinstallprompt가 있으면 바로 설치
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
 
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+          console.log('앱 설치됨');
+        }
 
-      if (outcome === 'accepted') {
-        console.log('앱 설치됨');
+        deferredPrompt = null;
+        installButton.style.display = 'none';
+      } else {
+        // beforeinstallprompt가 없으면 가이드 표시
+        androidGuide.classList.add('show');
+        installButton.textContent = '👇 아래 가이드를 확인하세요';
+        installButton.style.background = '#666';
+        installButton.style.cursor = 'default';
       }
-
-      deferredPrompt = null;
-      installButton.style.display = 'none';
     });
 
-    // 플랫폼별 가이드 표시
+    // 플랫폼별 UI 표시
     if (isIOS()) {
       // iOS: iOS 가이드 표시
       iosGuide.classList.add('show');
     } else {
-      // Android: 일단 가이드 표시 (beforeinstallprompt 발생하면 숨겨짐)
-      androidGuide.classList.add('show');
+      // Android: 항상 설치 버튼 표시
+      installButton.classList.add('show');
     }
 
     // QR 코드 생성 (Google Charts API 사용)
