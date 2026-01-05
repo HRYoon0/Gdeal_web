@@ -1,0 +1,28 @@
+{
+  "name": "G-DEAL - 경상권 교사 디지털 교육 커뮤니티",
+  "short_name": "G-DEAL",
+  "description": "경상권의 디지털 전환 교육을 선도함으로써 지역사회 교육 경쟁력을 제고하는 G-DEAL입니다.",
+  "start_url": "/home/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#66ae7d",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/G-DEAL_green.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/gdeal-og-image.png",
+      "sizes": "1200x630",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "categories": ["education", "productivity"],
+  "lang": "ko-KR",
+  "dir": "ltr",
+  "prefer_related_applications": false
+}
