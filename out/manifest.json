@@ -3,6 +3,7 @@
   "short_name": "G-DEAL",
   "description": "경상권의 디지털 전환 교육을 선도함으로써 지역사회 교육 경쟁력을 제고하는 G-DEAL입니다.",
   "start_url": "/home/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#66ae7d",
