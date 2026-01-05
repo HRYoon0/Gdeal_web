@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#66ae7d">
+  <title>G-DEAL 앱 설치</title>
+  <link rel="manifest" href="/manifest.json">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+      background: linear-gradient(135deg, #66ae7d 0%, #5a9d6f 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .container {
+      background: white;
+      border-radius: 24px;
+      padding: 40px;
+      max-width: 480px;
+      width: 100%;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      text-align: center;
+    }
+
+    .logo {
+      width: 120px;
+      height: 120px;
+      margin: 0 auto 24px;
+      background: linear-gradient(135deg, #66ae7d 0%, #5a9d6f 100%);
+      border-radius: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 24px rgba(102, 174, 125, 0.4);
+    }
+
+    .logo img {
+      width: 80px;
+      height: 80px;
+    }
+
+    h1 {
+      font-size: 28px;
+      font-weight: 700;
+      color: #1a1a1a;
+      margin-bottom: 12px;
+    }
+
+    .subtitle {
+      font-size: 16px;
+      color: #666;
+      margin-bottom: 32px;
+      line-height: 1.6;
+    }
+
+    /* 안드로이드 설치 버튼 */
+    .install-button {
+      display: none;
+      width: 100%;
+      background: linear-gradient(135deg, #66ae7d 0%, #5a9d6f 100%);
+      color: white;
+      border: none;
+      border-radius: 16px;
+      padding: 18px 32px;
+      font-size: 18px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 8px 24px rgba(102, 174, 125, 0.4);
+      transition: all 0.3s ease;
+      margin-bottom: 24px;
+    }
+
+    .install-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 32px rgba(102, 174, 125, 0.5);
+    }
+
+    .install-button:active {
+      transform: translateY(0);
+    }
+
+    .install-button.show {
+      display: block;
+    }
+
+    /* iOS 가이드 */
+    .ios-guide {
+      display: none;
+      text-align: left;
+      background: #f8f9fa;
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+
+    .ios-guide.show {
+      display: block;
+    }
+
+    .ios-guide h2 {
+      font-size: 18px;
+      font-weight: 700;
+      color: #1a1a1a;
+      margin-bottom: 16px;
+      text-align: center;
+    }
+
+    .step {
+      display: flex;
+      align-items: flex-start;
+      margin-bottom: 16px;
+      padding: 12px;
+      background: white;
+      border-radius: 12px;
+    }
+
+    .step:last-child {
+      margin-bottom: 0;
+    }
+
+    .step-number {
+      width: 32px;
+      height: 32px;
+      background: #66ae7d;
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      flex-shrink: 0;
+      margin-right: 12px;
+    }
+
+    .step-content {
+      flex: 1;
+    }
+
+    .step-title {
+      font-weight: 600;
+      color: #1a1a1a;
+      margin-bottom: 4px;
+    }
+
+    .step-desc {
+      font-size: 14px;
+      color: #666;
+      line-height: 1.5;
+    }
+
+    .share-icon {
+      display: inline-block;
+      border: 2px solid #66ae7d;
+      border-radius: 6px;
+      padding: 2px 8px;
+      font-size: 18px;
+      font-weight: 700;
+      color: #66ae7d;
+      margin: 0 4px;
+    }
+
+    /* QR 코드 */
+    .qr-section {
+      border-top: 1px solid #e0e0e0;
+      padding-top: 24px;
+      margin-top: 24px;
+    }
+
+    .qr-title {
+      font-size: 14px;
+      color: #666;
+      margin-bottom: 16px;
+    }
+
+    #qrcode {
+      display: inline-block;
+      padding: 16px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    /* 로딩 상태 */
+    .loading {
+      color: #666;
+      font-size: 14px;
+    }
+
+    /* 반응형 */
+    @media (max-width: 480px) {
+      .container {
+        padding: 32px 24px;
+      }
+
+      h1 {
+        font-size: 24px;
+      }
+
+      .logo {
+        width: 100px;
+        height: 100px;
+      }
+
+      .logo img {
+        width: 64px;
+        height: 64px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo">
+      <img src="/G-DEAL_green.svg" alt="G-DEAL">
+    </div>
+
+    <h1>G-DEAL 앱 설치</h1>
+    <p class="subtitle">경상권 교사 디지털 교육 커뮤니티를<br>홈 화면에 추가하세요</p>
+
+    <!-- 안드로이드 설치 버튼 -->
+    <button id="installButton" class="install-button">
+      <span>📱 지금 앱 설치하기</span>
+    </button>
+
+    <!-- iOS 가이드 -->
+    <div id="iosGuide" class="ios-guide">
+      <h2>📱 iOS 설치 방법</h2>
+      <div class="step">
+        <div class="step-number">1</div>
+        <div class="step-content">
+          <div class="step-title">Safari로 열기</div>
+          <div class="step-desc">Safari 브라우저에서 이 페이지를 열어주세요</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-number">2</div>
+        <div class="step-content">
+          <div class="step-title">공유 버튼 탭하기</div>
+          <div class="step-desc">하단의 <span class="share-icon">□↑</span> 공유 버튼을 탭하세요</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-number">3</div>
+        <div class="step-content">
+          <div class="step-title">홈 화면에 추가</div>
+          <div class="step-desc">"홈 화면에 추가"를 선택하고 "추가"를 탭하세요</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- QR 코드 -->
+    <div class="qr-section">
+      <div class="qr-title">다른 기기에서 설치하기</div>
+      <div id="qrcode"></div>
+    </div>
+  </div>
+
+  <script>
+    let deferredPrompt;
+    const installButton = document.getElementById('installButton');
+    const iosGuide = document.getElementById('iosGuide');
+
+    // iOS 감지
+    function isIOS() {
+      return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    }
+
+    // beforeinstallprompt 이벤트 리스닝
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+
+      // 안드로이드: 설치 버튼 표시
+      installButton.classList.add('show');
+    });
+
+    // 설치 버튼 클릭
+    installButton.addEventListener('click', async () => {
+      if (!deferredPrompt) return;
+
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+
+      if (outcome === 'accepted') {
+        console.log('앱 설치됨');
+      }
+
+      deferredPrompt = null;
+      installButton.style.display = 'none';
+    });
+
+    // iOS인 경우 가이드 표시
+    if (isIOS()) {
+      iosGuide.classList.add('show');
+    }
+
+    // QR 코드 생성 (Google Charts API 사용)
+    const currentUrl = window.location.origin + '/install/';
+    const qrcodeDiv = document.getElementById('qrcode');
+    const qrImage = document.createElement('img');
+    qrImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(currentUrl)}`;
+    qrImage.alt = 'QR Code';
+    qrImage.style.width = '200px';
+    qrImage.style.height = '200px';
+    qrcodeDiv.appendChild(qrImage);
+
+    // 앱 설치 후 리다이렉트
+    window.addEventListener('appinstalled', () => {
+      setTimeout(() => {
+        window.location.href = '/home/';
+      }, 1000);
+    });
+  </script>
+</body>
+</html>
