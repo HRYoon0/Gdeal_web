@@ -1,0 +1,22 @@
+# 다운로드 스크립트 및 임시 파일
+download-site.js
+download-resources.sh
+crawl-site.js
+
+# Firebase 캐시
+.firebase/
+
+# 로그 파일
+*.log
+firebase-debug.log
+
+# Node modules (필요시)
+node_modules/
+
+# OS 파일
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
