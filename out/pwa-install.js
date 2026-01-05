@@ -21,10 +21,16 @@
     deferredPrompt = e;
   });
 
+  // 모바일 기기 감지
+  function isMobile() {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+           window.innerWidth <= 768;
+  }
+
   // 페이지 로드 후 즉시 버튼 표시
   function initInstallButton() {
-    // 이미 standalone 모드로 실행 중이 아니면 버튼 표시
-    if (!window.matchMedia('(display-mode: standalone)').matches && !isInStandaloneMode()) {
+    // 모바일이고 standalone 모드가 아닐 때만 버튼 표시
+    if (isMobile() && !window.matchMedia('(display-mode: standalone)').matches && !isInStandaloneMode()) {
       showInstallButton();
     }
   }
@@ -112,8 +118,8 @@
           hideInstallButton();
         }
       } else {
-        // beforeinstallprompt가 없는 경우 수동 설치 안내
-        showInstallInstructions();
+        // beforeinstallprompt가 없는 경우 (iOS) 간단한 토스트 알림
+        showToast();
       }
     });
 
@@ -163,101 +169,71 @@
     }
   }
 
-  // 수동 설치 안내 표시
-  function showInstallInstructions() {
-    // 오버레이 생성
-    const overlay = document.createElement('div');
-    overlay.style.cssText = `
+  // 간단한 토스트 알림 표시
+  function showToast() {
+    const toast = document.createElement('div');
+    const message = isIOS()
+      ? 'Safari 공유 버튼(□↑)에서 "홈 화면에 추가"를 선택하세요'
+      : '브라우저 메뉴에서 "홈 화면에 추가"를 선택하세요';
+
+    toast.textContent = message;
+    toast.style.cssText = `
       position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0, 0, 0, 0.6);
+      bottom: 100px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.85);
+      color: white;
+      padding: 14px 24px;
+      border-radius: 25px;
+      font-size: 14px;
       z-index: 10000;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-      animation: fadeIn 0.3s ease-out;
+      max-width: 90%;
+      text-align: center;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      animation: toastSlideIn 0.3s ease-out;
     `;
 
-    // 안내 모달 생성
-    const modal = document.createElement('div');
-    modal.style.cssText = `
-      background: white;
-      border-radius: 16px;
-      padding: 24px;
-      max-width: 400px;
-      width: 100%;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-      animation: slideInUp 0.3s ease-out;
-    `;
-
-    // iOS 확인
-    const isIOSDevice = isIOS();
-
-    modal.innerHTML = `
-      <div style="text-align: center;">
-        <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #66ae7d 0%, #5a9d6f 100%); border-radius: 50%; margin: 0 auto 16px; display: flex; align-items: center; justify-content: center;">
-          <svg stroke="white" fill="white" stroke-width="0" viewBox="0 0 24 24" height="32" width="32" xmlns="http://www.w3.org/2000/svg">
-            <path fill="none" d="M0 0h24v24H0z"></path>
-            <path d="M19 12v7H5v-7H3v7c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7h-2zm-6 .67l2.59-2.58L17 11.5l-5 5-5-5 1.41-1.41L11 12.67V3h2z"></path>
-          </svg>
-        </div>
-        <h2 style="margin: 0 0 12px; font-size: 20px; font-weight: 700; color: #1a1a1a;">홈 화면에 추가하기</h2>
-        <p style="margin: 0 0 20px; font-size: 14px; color: #666; line-height: 1.6;">
-          ${isIOSDevice
-            ? 'Safari에서 공유 버튼 <span style="display: inline-block; border: 1px solid #ccc; border-radius: 4px; padding: 2px 6px; font-size: 16px;">□↑</span>을 누른 후<br/>"홈 화면에 추가"를 선택하세요.'
-            : '브라우저 메뉴 <span style="display: inline-block; border: 1px solid #ccc; border-radius: 4px; padding: 2px 6px;">⋮</span>를 열고<br/>"홈 화면에 추가" 또는 "앱 설치"를 선택하세요.'
+    // 애니메이션 CSS 추가
+    if (!document.getElementById('toast-animation-style')) {
+      const style = document.createElement('style');
+      style.id = 'toast-animation-style';
+      style.textContent = `
+        @keyframes toastSlideIn {
+          from {
+            opacity: 0;
+            transform: translateX(-50%) translateY(20px);
           }
-        </p>
-        <button id="close-install-modal" style="
-          background: #66ae7d;
-          color: white;
-          border: none;
-          border-radius: 8px;
-          padding: 12px 24px;
-          font-size: 15px;
-          font-weight: 600;
-          cursor: pointer;
-          width: 100%;
-          transition: background 0.2s;
-        ">확인</button>
-      </div>
-    `;
-
-    overlay.appendChild(modal);
-
-    // 애니메이션 추가
-    const style = document.createElement('style');
-    style.textContent = `
-      @keyframes fadeIn {
-        from { opacity: 0; }
-        to { opacity: 1; }
-      }
-    `;
-    document.head.appendChild(style);
-
-    // 닫기 이벤트
-    const closeButton = modal.querySelector('#close-install-modal');
-    const closeModal = () => {
-      overlay.style.animation = 'fadeIn 0.2s ease-out reverse';
-      setTimeout(() => {
-        if (overlay.parentNode) {
-          overlay.parentNode.removeChild(overlay);
+          to {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+          }
         }
-      }, 200);
-    };
+        @keyframes toastSlideOut {
+          from {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+          }
+          to {
+            opacity: 0;
+            transform: translateX(-50%) translateY(20px);
+          }
+        }
+      `;
+      document.head.appendChild(style);
+    }
 
-    closeButton.addEventListener('click', closeModal);
-    overlay.addEventListener('click', (e) => {
-      if (e.target === overlay) {
-        closeModal();
-      }
-    });
+    document.body.appendChild(toast);
 
-    document.body.appendChild(overlay);
+    // 3초 후 자동 제거
+    setTimeout(() => {
+      toast.style.animation = 'toastSlideOut 0.3s ease-out';
+      setTimeout(() => {
+        if (toast.parentNode) {
+          toast.parentNode.removeChild(toast);
+        }
+      }, 300);
+    }, 3000);
   }
 
   // 앱이 이미 설치된 경우 감지
