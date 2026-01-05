@@ -233,6 +233,32 @@
       <span>📱 지금 앱 설치하기</span>
     </button>
 
+    <!-- 안드로이드 가이드 (beforeinstallprompt 없을 때) -->
+    <div id="androidGuide" class="ios-guide">
+      <h2>📱 Android 설치 방법</h2>
+      <div class="step">
+        <div class="step-number">1</div>
+        <div class="step-content">
+          <div class="step-title">브라우저 메뉴 열기</div>
+          <div class="step-desc">우측 상단의 메뉴(⋮)를 탭하세요</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-number">2</div>
+        <div class="step-content">
+          <div class="step-title">홈 화면에 추가</div>
+          <div class="step-desc">"홈 화면에 추가" 또는 "앱 설치"를 선택하세요</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-number">3</div>
+        <div class="step-content">
+          <div class="step-title">설치 완료</div>
+          <div class="step-desc">"추가" 또는 "설치"를 탭하면 완료!</div>
+        </div>
+      </div>
+    </div>
+
     <!-- iOS 가이드 -->
     <div id="iosGuide" class="ios-guide">
       <h2>📱 iOS 설치 방법</h2>
@@ -269,6 +295,7 @@
   <script>
     let deferredPrompt;
     const installButton = document.getElementById('installButton');
+    const androidGuide = document.getElementById('androidGuide');
     const iosGuide = document.getElementById('iosGuide');
 
     // iOS 감지
@@ -281,8 +308,9 @@
       e.preventDefault();
       deferredPrompt = e;
 
-      // 안드로이드: 설치 버튼 표시
+      // 안드로이드: 설치 버튼 표시, 가이드 숨김
       installButton.classList.add('show');
+      androidGuide.classList.remove('show');
     });
 
     // 설치 버튼 클릭
@@ -300,9 +328,13 @@
       installButton.style.display = 'none';
     });
 
-    // iOS인 경우 가이드 표시
+    // 플랫폼별 가이드 표시
     if (isIOS()) {
+      // iOS: iOS 가이드 표시
       iosGuide.classList.add('show');
+    } else {
+      // Android: 일단 가이드 표시 (beforeinstallprompt 발생하면 숨겨짐)
+      androidGuide.classList.add('show');
     }
 
     // QR 코드 생성 (Google Charts API 사용)
