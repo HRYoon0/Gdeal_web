@@ -56,11 +56,15 @@
     // 이미 버튼이 있으면 중복 생성 방지
     if (installButton) return;
 
+    // 홈 페이지에서만 작동
+    if (!window.location.pathname.includes('/home')) return;
+
     // 설치 버튼 생성
-    installButton = document.createElement('button');
+    installButton = document.createElement('a');
     installButton.id = 'pwa-install-btn';
+    installButton.href = '/install/';
     installButton.innerHTML = `
-      <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 24 24" height="20" width="20" xmlns="http://www.w3.org/2000/svg">
+      <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 24 24" height="14" width="14" xmlns="http://www.w3.org/2000/svg">
         <path fill="none" d="M0 0h24v24H0z"></path>
         <path d="M19 12v7H5v-7H3v7c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7h-2zm-6 .67l2.59-2.58L17 11.5l-5 5-5-5 1.41-1.41L11 12.67V3h2z"></path>
       </svg>
@@ -69,67 +73,42 @@
 
     // 스타일 적용
     installButton.style.cssText = `
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      z-index: 9999;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
       background: linear-gradient(135deg, #66ae7d 0%, #5a9d6f 100%);
       color: white;
       border: none;
-      border-radius: 50px;
-      padding: 12px 24px;
-      font-size: 15px;
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 12px;
       font-weight: 600;
-      cursor: pointer;
-      box-shadow: 0 4px 20px rgba(102, 174, 125, 0.4), 0 2px 8px rgba(0, 0, 0, 0.15);
-      display: flex;
-      align-items: center;
-      gap: 8px;
+      text-decoration: none;
+      box-shadow: 0 2px 6px rgba(102, 174, 125, 0.25);
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      animation: slideInUp 0.5s ease-out;
+      animation: slideInDown 0.5s ease-out;
+      z-index: 50;
     `;
 
     // hover 효과를 위한 이벤트
     installButton.addEventListener('mouseenter', () => {
       installButton.style.transform = 'translateY(-2px)';
-      installButton.style.boxShadow = '0 6px 24px rgba(102, 174, 125, 0.5), 0 4px 12px rgba(0, 0, 0, 0.2)';
+      installButton.style.boxShadow = '0 6px 16px rgba(102, 174, 125, 0.4)';
     });
 
     installButton.addEventListener('mouseleave', () => {
       installButton.style.transform = 'translateY(0)';
-      installButton.style.boxShadow = '0 4px 20px rgba(102, 174, 125, 0.4), 0 2px 8px rgba(0, 0, 0, 0.15)';
-    });
-
-    // 클릭 이벤트
-    installButton.addEventListener('click', async () => {
-      if (deferredPrompt) {
-        // beforeinstallprompt가 있는 경우 자동 설치
-        deferredPrompt.prompt();
-
-        // 사용자의 선택 대기
-        const { outcome } = await deferredPrompt.userChoice;
-
-        console.log(`사용자 선택: ${outcome}`);
-
-        // 프롬프트는 한 번만 사용 가능
-        deferredPrompt = null;
-
-        if (outcome === 'accepted') {
-          hideInstallButton();
-        }
-      } else {
-        // beforeinstallprompt가 없는 경우 (iOS) 간단한 토스트 알림
-        showToast();
-      }
+      installButton.style.boxShadow = '0 4px 12px rgba(102, 174, 125, 0.3)';
     });
 
     // 애니메이션 CSS 추가
     const style = document.createElement('style');
     style.textContent = `
-      @keyframes slideInUp {
+      @keyframes slideInDown {
         from {
           opacity: 0;
-          transform: translateY(20px);
+          transform: translateY(-20px);
         }
         to {
           opacity: 1;
@@ -138,22 +117,29 @@
       }
 
       #pwa-install-btn:active {
-        transform: scale(0.95) !important;
-      }
-
-      @media (max-width: 768px) {
-        #pwa-install-btn {
-          bottom: 80px;
-          right: 16px;
-          font-size: 14px;
-          padding: 10px 20px;
-        }
+        transform: scale(0.98) !important;
       }
     `;
     document.head.appendChild(style);
 
-    // body에 버튼 추가
-    document.body.appendChild(installButton);
+    // header 요소 찾기
+    const header = document.querySelector('header');
+    if (header && header.nextSibling) {
+      // 버튼을 감싸는 컨테이너 생성
+      const container = document.createElement('div');
+      container.style.cssText = 'display: flex; justify-content: flex-end; padding: 8px 24px; background: white;';
+
+      // 버튼에만 pointer-events 활성화
+      installButton.style.pointerEvents = 'auto';
+
+      container.appendChild(installButton);
+
+      // header 바로 다음에 추가
+      header.parentNode.insertBefore(container, header.nextSibling);
+    } else {
+      // header 못 찾으면 body에 추가
+      document.body.appendChild(installButton);
+    }
   }
 
   // 설치 버튼 숨기기
