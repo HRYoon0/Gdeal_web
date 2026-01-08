@@ -1,5 +1,63 @@
 // G-DEAL PWA Service Worker
 const CACHE_NAME = 'gdeal-v1';
+
+// Firebase Cloud Messaging
+importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-messaging-compat.js');
+
+firebase.initializeApp({
+  apiKey: "AIzaSyCOl5zvS29HOH5RGCR7cP_-WCzglddpNKM",
+  authDomain: "gdeal-page-a67e2.firebaseapp.com",
+  projectId: "gdeal-page-a67e2",
+  storageBucket: "gdeal-page-a67e2.firebasestorage.app",
+  messagingSenderId: "309761797743",
+  appId: "1:309761797743:web:f0e10f2f8f05724f91335b"
+});
+
+const messaging = firebase.messaging();
+
+// 백그라운드 메시지 수신
+messaging.onBackgroundMessage((payload) => {
+  console.log('백그라운드 메시지 수신:', payload);
+
+  const notificationTitle = payload.notification?.title || 'G-DEAL 알림';
+  const notificationOptions = {
+    body: payload.notification?.body || '새로운 소식이 있습니다.',
+    icon: '/icons/icon-192x192.png',
+    badge: '/icons/icon-72x72.png',
+    tag: payload.data?.tag || 'gdeal-notification',
+    data: payload.data,
+    actions: [
+      { action: 'open', title: '열기' },
+      { action: 'close', title: '닫기' }
+    ]
+  };
+
+  return self.registration.showNotification(notificationTitle, notificationOptions);
+});
+
+// 알림 클릭 이벤트
+self.addEventListener('notificationclick', (event) => {
+  console.log('알림 클릭:', event);
+  event.notification.close();
+
+  if (event.action === 'close') return;
+
+  const urlToOpen = event.notification.data?.url || '/home/';
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true })
+      .then((windowClients) => {
+        for (const client of windowClients) {
+          if (client.url.includes(self.location.origin) && 'focus' in client) {
+            client.navigate(urlToOpen);
+            return client.focus();
+          }
+        }
+        return clients.openWindow(urlToOpen);
+      })
+  );
+});
 const urlsToCache = [
   '/home/',
   '/about/',
