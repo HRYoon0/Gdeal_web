@@ -183,17 +183,17 @@
     }
 
     .qr-title {
-      font-size: 14px;
-      color: #666;
+      font-size: 16px;
+      font-weight: 600;
+      color: #1a1a1a;
       margin-bottom: 16px;
     }
 
-    #qrcode {
-      display: inline-block;
-      padding: 16px;
-      background: white;
+    .ios-install-steps {
+      text-align: left;
+      background: #f8f9fa;
       border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      padding: 16px;
     }
 
     /* 로딩 상태 */
@@ -264,36 +264,33 @@
       </div>
     </div>
 
-    <!-- iOS 가이드 -->
-    <div id="iosGuide" class="ios-guide">
-      <h2>📱 iOS 설치 방법</h2>
-      <div class="step">
-        <div class="step-number">1</div>
-        <div class="step-content">
-          <div class="step-title">Safari로 열기</div>
-          <div class="step-desc">Safari 브라우저에서 이 페이지를 열어주세요</div>
-        </div>
-      </div>
-      <div class="step">
-        <div class="step-number">2</div>
-        <div class="step-content">
-          <div class="step-title">공유 버튼 탭하기</div>
-          <div class="step-desc">하단의 <span class="share-icon">□↑</span> 공유 버튼을 탭하세요</div>
-        </div>
-      </div>
-      <div class="step">
-        <div class="step-number">3</div>
-        <div class="step-content">
-          <div class="step-title">홈 화면에 추가</div>
-          <div class="step-desc">"홈 화면에 추가"를 선택하고 "추가"를 탭하세요</div>
-        </div>
-      </div>
-    </div>
 
-    <!-- QR 코드 -->
+    <!-- iOS 설치 가이드 (항상 표시) -->
     <div class="qr-section">
-      <div class="qr-title">다른 기기에서 설치하기</div>
-      <div id="qrcode"></div>
+      <div class="qr-title">📱 iOS(아이폰/아이패드) 설치 방법</div>
+      <div class="ios-install-steps">
+        <div class="step">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <div class="step-title">Safari로 열기</div>
+            <div class="step-desc">Safari 브라우저에서 이 페이지를 열어주세요</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <div class="step-title">공유 버튼 탭하기</div>
+            <div class="step-desc">하단의 <span class="share-icon">□↑</span> 공유 버튼을 탭하세요</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-number">3</div>
+          <div class="step-content">
+            <div class="step-title">홈 화면에 추가</div>
+            <div class="step-desc">"홈 화면에 추가"를 선택하고 "추가"를 탭하세요</div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -301,7 +298,6 @@
     let deferredPrompt;
     const installButton = document.getElementById('installButton');
     const androidGuide = document.getElementById('androidGuide');
-    const iosGuide = document.getElementById('iosGuide');
 
     // iOS 감지
     function isIOS() {
@@ -336,24 +332,8 @@
       }
     });
 
-    // 플랫폼별 UI 표시
-    if (isIOS()) {
-      // iOS: iOS 가이드 표시
-      iosGuide.classList.add('show');
-    } else {
-      // Android: 항상 설치 버튼 표시
-      installButton.classList.add('show');
-    }
-
-    // QR 코드 생성 (Google Charts API 사용)
-    const currentUrl = window.location.origin + '/install/';
-    const qrcodeDiv = document.getElementById('qrcode');
-    const qrImage = document.createElement('img');
-    qrImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(currentUrl)}`;
-    qrImage.alt = 'QR Code';
-    qrImage.style.width = '200px';
-    qrImage.style.height = '200px';
-    qrcodeDiv.appendChild(qrImage);
+    // 항상 설치 버튼 표시 (Android/iOS 모두)
+    installButton.classList.add('show');
 
     // 앱 설치 후 리다이렉트
     window.addEventListener('appinstalled', () => {
