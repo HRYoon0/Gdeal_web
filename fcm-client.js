@@ -97,7 +97,7 @@
 
         // FCM 토큰 획득
         const token = await messaging.getToken({
-          vapidKey: 'BPq1JdP4QYyKmMwxG_XS7qKXmMgGMCjNMkWZWBNhTdBMOZdA5pTxKJxM5nM8GqN8mZUdWXh7vxW8K9VqQnP5dME',
+          vapidKey: 'BKlQ4qeoh17M93lKA6xST-9zoXO5XJ4Q4SfyPVCbgOidT4zeybU_d9Znd0NuiCHnbtWYI5q9Erig927u_sVkpRc',
           serviceWorkerRegistration: registration
         });
 
