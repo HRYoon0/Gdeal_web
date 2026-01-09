@@ -67,6 +67,14 @@
     .btn-secondary:hover {
       background: rgba(255,255,255,0.3);
     }
+    .btn-cancel {
+      background: #e5e7eb;
+      color: #374151;
+      border: 1px solid #d1d5db;
+    }
+    .btn-cancel:hover {
+      background: #d1d5db;
+    }
     .btn-danger {
       background: #f44336;
       color: white;
@@ -368,7 +376,7 @@
       <h3 id="confirmTitle">확인</h3>
       <p id="confirmMessage">진행하시겠습니까?</p>
       <div class="modal-buttons">
-        <button class="btn btn-secondary" onclick="closeConfirmModal()">취소</button>
+        <button class="btn btn-cancel" onclick="closeConfirmModal()">취소</button>
         <button class="btn btn-primary" id="confirmBtn" onclick="confirmAction()">확인</button>
       </div>
     </div>
