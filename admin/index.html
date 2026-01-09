@@ -397,6 +397,7 @@
     let currentUser = null;
     let currentUserData = null;
     let allMembers = [];
+    let pendingMembers = []; // pendingUsers 컬렉션
     let canManage = false; // 운영사무국 또는 최고관리자인지
     let pendingAction = null;
     let currentTab = 'pending';
@@ -603,32 +604,56 @@
     // 회원 목록 로드
     async function loadMembers() {
       try {
-        const snapshot = await db.collection('users').get();
-        allMembers = [];
+        console.log('회원 목록 로드 시작...');
 
-        snapshot.forEach(doc => {
+        // users 컬렉션 조회
+        const usersSnapshot = await db.collection('users').get();
+        console.log('users 컬렉션 문서 수:', usersSnapshot.size);
+
+        allMembers = [];
+        usersSnapshot.forEach(doc => {
           allMembers.push({
             id: doc.id,
+            collection: 'users',
             ...doc.data()
           });
         });
+
+        // pendingUsers 컬렉션 조회 (가입 대기)
+        const pendingSnapshot = await db.collection('pendingUsers').get();
+        console.log('pendingUsers 컬렉션 문서 수:', pendingSnapshot.size);
+
+        pendingMembers = [];
+        pendingSnapshot.forEach(doc => {
+          const data = doc.data();
+          console.log('가입 대기 회원:', doc.id, data);
+          pendingMembers.push({
+            id: doc.id,
+            collection: 'pendingUsers',
+            ...data
+          });
+        });
+
+        console.log('전체 승인된 회원 수:', allMembers.length);
+        console.log('가입 대기 회원 수:', pendingMembers.length);
 
         updateCounts();
         renderCurrentTab();
       } catch (error) {
         console.error('회원 목록 로드 실패:', error);
-        showToast('회원 목록을 불러오는데 실패했습니다.', 'error');
+        showToast('회원 목록을 불러오는데 실패했습니다: ' + error.message, 'error');
       }
     }
 
     // 카운트 업데이트
     function updateCounts() {
-      const pending = allMembers.filter(m => m.status === 'pending' || !m.status);
-      const learning = allMembers.filter(m => m.memberTier === 'learning-member' && m.status === 'approved');
-      const sharing = allMembers.filter(m => m.memberTier === 'sharing-member' && m.status === 'approved');
+      // pendingUsers 컬렉션에서 가입 대기 회원 수
+      const pendingCount = pendingMembers.length;
+      const learning = allMembers.filter(m => m.memberTier === 'learning-member');
+      const sharing = allMembers.filter(m => m.memberTier === 'sharing-member');
       const operations = allMembers.filter(m => m.memberTier === 'operations-office' || m.role === 'superAdmin');
 
-      document.getElementById('pendingCount').textContent = pending.length;
+      document.getElementById('pendingCount').textContent = pendingCount;
       document.getElementById('learningCount').textContent = learning.length;
       document.getElementById('sharingCount').textContent = sharing.length;
       document.getElementById('operationsCount').textContent = operations.length;
@@ -675,9 +700,8 @@
 
     // 승인 대기 탭 렌더링
     function renderPendingTab() {
-      const members = filterMembers(
-        allMembers.filter(m => m.status === 'pending' || !m.status)
-      ).sort((a, b) => {
+      // pendingUsers 컬렉션에서 가입 대기 회원
+      const members = filterMembers(pendingMembers).sort((a, b) => {
         const dateA = a.createdAt?.toDate?.() || new Date(0);
         const dateB = b.createdAt?.toDate?.() || new Date(0);
         return dateB - dateA;
@@ -862,53 +886,81 @@
       closeConfirmModal();
 
       try {
-        let updateData = {
-          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        };
+        // 승인/거부는 pendingUsers에서 처리
+        if (action === 'approve' || action === 'reject') {
+          const pendingMember = pendingMembers.find(m => m.id === userId);
+          if (!pendingMember) {
+            showToast('회원 정보를 찾을 수 없습니다.', 'error');
+            return;
+          }
 
-        switch(action) {
-          case 'approve':
-            updateData.status = 'approved';
-            updateData.memberTier = 'learning-member';
-            updateData.tierChangedAt = firebase.firestore.FieldValue.serverTimestamp();
-            break;
-          case 'reject':
-            updateData.status = 'rejected';
-            break;
-          case 'toSharing':
-            updateData.memberTier = 'sharing-member';
-            updateData.tierChangedAt = firebase.firestore.FieldValue.serverTimestamp();
-            break;
-          case 'toLearning':
-            updateData.memberTier = 'learning-member';
-            updateData.tierChangedAt = firebase.firestore.FieldValue.serverTimestamp();
-            break;
-          case 'toOperations':
-            updateData.memberTier = 'operations-office';
-            updateData.tierChangedAt = firebase.firestore.FieldValue.serverTimestamp();
-            break;
-          case 'toSharingFromOps':
-            updateData.memberTier = 'sharing-member';
-            updateData.tierChangedAt = firebase.firestore.FieldValue.serverTimestamp();
-            break;
+          if (action === 'approve') {
+            // pendingUsers에서 데이터 가져와서 users로 이동
+            const { id, collection, ...memberData } = pendingMember;
+
+            // users 컬렉션에 추가 (uid를 문서 ID로 사용)
+            const docId = memberData.uid || userId;
+            await db.collection('users').doc(docId).set({
+              ...memberData,
+              status: 'approved',
+              memberTier: 'learning-member',
+              approvedAt: firebase.firestore.FieldValue.serverTimestamp(),
+              approvedBy: currentUser.uid,
+              tierChangedAt: firebase.firestore.FieldValue.serverTimestamp(),
+              tierChangedBy: currentUser.uid
+            });
+
+            // pendingUsers에서 삭제
+            await db.collection('pendingUsers').doc(userId).delete();
+
+            showToast('회원이 승인되어 배움회원으로 등록되었습니다.', 'success');
+          } else {
+            // 거부: pendingUsers에서 삭제
+            await db.collection('pendingUsers').doc(userId).delete();
+            showToast('회원 가입이 거부되었습니다.', 'success');
+          }
+        } else {
+          // 등급 변경은 users 컬렉션에서 처리
+          let updateData = {
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            tierChangedBy: currentUser.uid
+          };
+
+          switch(action) {
+            case 'toSharing':
+              updateData.memberTier = 'sharing-member';
+              updateData.tierChangedAt = firebase.firestore.FieldValue.serverTimestamp();
+              break;
+            case 'toLearning':
+              updateData.memberTier = 'learning-member';
+              updateData.tierChangedAt = firebase.firestore.FieldValue.serverTimestamp();
+              break;
+            case 'toOperations':
+              updateData.memberTier = 'operations-office';
+              updateData.tierChangedAt = firebase.firestore.FieldValue.serverTimestamp();
+              break;
+            case 'toSharingFromOps':
+              updateData.memberTier = 'sharing-member';
+              updateData.tierChangedAt = firebase.firestore.FieldValue.serverTimestamp();
+              break;
+          }
+
+          await db.collection('users').doc(userId).update(updateData);
+
+          const successMessages = {
+            'toSharing': '나눔회원으로 변경되었습니다.',
+            'toLearning': '배움회원으로 변경되었습니다.',
+            'toOperations': '운영사무국으로 변경되었습니다.',
+            'toSharingFromOps': '나눔회원으로 변경되었습니다.'
+          };
+
+          showToast(successMessages[action], 'success');
         }
 
-        await db.collection('users').doc(userId).update(updateData);
-
-        const successMessages = {
-          'approve': '회원이 승인되어 배움회원으로 등록되었습니다.',
-          'reject': '회원 가입이 거부되었습니다.',
-          'toSharing': '나눔회원으로 변경되었습니다.',
-          'toLearning': '배움회원으로 변경되었습니다.',
-          'toOperations': '운영사무국으로 변경되었습니다.',
-          'toSharingFromOps': '나눔회원으로 변경되었습니다.'
-        };
-
-        showToast(successMessages[action], 'success');
         loadMembers();
       } catch (error) {
         console.error('작업 실패:', error);
-        showToast('작업에 실패했습니다.', 'error');
+        showToast('작업에 실패했습니다: ' + error.message, 'error');
       }
     }
 
