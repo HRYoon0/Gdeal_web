@@ -4,22 +4,34 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>G-DEAL 관리자 패널</title>
+  <link rel="preload" href="https://cdn.jsdelivr.net/gh/projectnoonnu/2408-3@1.0/Paperlogy-4Regular.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="https://cdn.jsdelivr.net/gh/projectnoonnu/2408-3@1.0/Paperlogy-5Medium.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="https://cdn.jsdelivr.net/gh/projectnoonnu/2408-3@1.0/Paperlogy-6SemiBold.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="https://cdn.jsdelivr.net/gh/projectnoonnu/2408-3@1.0/Paperlogy-7Bold.woff2" as="font" type="font/woff2" crossorigin>
   <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore-compat.js"></script>
   <style>
+    @font-face{font-family:'Paperlogy';src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/2408-3@1.0/Paperlogy-4Regular.woff2') format('woff2');font-weight:400;font-style:normal;font-display:swap}
+    @font-face{font-family:'Paperlogy';src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/2408-3@1.0/Paperlogy-5Medium.woff2') format('woff2');font-weight:500;font-style:normal;font-display:swap}
+    @font-face{font-family:'Paperlogy';src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/2408-3@1.0/Paperlogy-6SemiBold.woff2') format('woff2');font-weight:600;font-style:normal;font-display:swap}
+    @font-face{font-family:'Paperlogy';src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/2408-3@1.0/Paperlogy-7Bold.woff2') format('woff2');font-weight:700;font-style:normal;font-display:swap}
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
     }
+    *,*::before,*::after,body {
+      font-family: 'Paperlogy', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
       background-color: #f5f5f5;
       min-height: 100vh;
     }
     .header {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(135deg, #66ae7d 0%, #497e56 100%);
       color: white;
       padding: 20px;
       display: flex;
@@ -53,11 +65,11 @@
       transition: all 0.2s;
     }
     .btn-primary {
-      background: #4CAF50;
+      background: #66ae7d;
       color: white;
     }
     .btn-primary:hover {
-      background: #45a049;
+      background: #497e56;
     }
     .btn-secondary {
       background: rgba(255,255,255,0.2);
@@ -87,11 +99,11 @@
       font-size: 0.8rem;
     }
     .btn-approve {
-      background: #10b981;
+      background: #66ae7d;
       color: white;
     }
     .btn-approve:hover {
-      background: #059669;
+      background: #497e56;
     }
     .btn-to-learning {
       background: #dcfce7;
@@ -177,7 +189,7 @@
       background: #f3f4f6;
     }
     .tab.active {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(135deg, #66ae7d 0%, #497e56 100%);
       color: white;
     }
     .tab .count {
@@ -263,7 +275,7 @@
       z-index: 1001;
     }
     .toast.success {
-      background: #10b981;
+      background: #66ae7d;
     }
     .toast.error {
       background: #ef4444;
@@ -298,7 +310,7 @@
     }
     .search-box input:focus {
       outline: none;
-      border-color: #667eea;
+      border-color: #66ae7d;
     }
     .modal {
       display: none;

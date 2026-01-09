@@ -102,6 +102,12 @@ self.addEventListener('activate', (event) => {
 
 // Fetch 이벤트: 네트워크 우선, 실패 시 캐시 사용
 self.addEventListener('fetch', (event) => {
+  // POST 요청은 캐시하지 않음 (Cache API는 GET만 지원)
+  if (event.request.method !== 'GET') {
+    event.respondWith(fetch(event.request));
+    return;
+  }
+
   event.respondWith(
     fetch(event.request)
       .then((response) => {
