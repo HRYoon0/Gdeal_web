@@ -85,19 +85,29 @@
     .btn-approve:hover {
       background: #059669;
     }
-    .btn-upgrade {
-      background: #3b82f6;
-      color: white;
+    .btn-to-learning {
+      background: #dcfce7;
+      color: #166534;
+      border: 1px solid #bbf7d0;
     }
-    .btn-upgrade:hover {
-      background: #2563eb;
+    .btn-to-learning:hover {
+      background: #bbf7d0;
     }
-    .btn-downgrade {
-      background: #f59e0b;
-      color: white;
+    .btn-to-sharing {
+      background: #dbeafe;
+      color: #1e40af;
+      border: 1px solid #bfdbfe;
     }
-    .btn-downgrade:hover {
-      background: #d97706;
+    .btn-to-sharing:hover {
+      background: #bfdbfe;
+    }
+    .btn-to-operations {
+      background: #f3e8ff;
+      color: #6b21a8;
+      border: 1px solid #e9d5ff;
+    }
+    .btn-to-operations:hover {
+      background: #e9d5ff;
     }
     .container {
       max-width: 1200px;
@@ -723,7 +733,7 @@
           <td>${formatDate(member.tierChangedAt || member.createdAt)}</td>
           <td class="actions">
             ${canManage ? `
-              <button class="btn btn-upgrade btn-small" onclick="showConfirm('toSharing', '${member.id}', '${member.displayName || member.email}')">
+              <button class="btn btn-to-sharing btn-small" onclick="showConfirm('toSharing', '${member.id}', '${member.displayName || member.email}')">
                 나눔회원으로
               </button>
             ` : '<span style="color:#999">권한 없음</span>'}
@@ -756,10 +766,10 @@
           <td>${formatDate(member.tierChangedAt || member.createdAt)}</td>
           <td class="actions">
             ${canManage ? `
-              <button class="btn btn-downgrade btn-small" onclick="showConfirm('toLearning', '${member.id}', '${member.displayName || member.email}')">
+              <button class="btn btn-to-learning btn-small" onclick="showConfirm('toLearning', '${member.id}', '${member.displayName || member.email}')">
                 배움회원으로
               </button>
-              <button class="btn btn-upgrade btn-small" onclick="showConfirm('toOperations', '${member.id}', '${member.displayName || member.email}')">
+              <button class="btn btn-to-operations btn-small" onclick="showConfirm('toOperations', '${member.id}', '${member.displayName || member.email}')">
                 운영사무국으로
               </button>
             ` : '<span style="color:#999">권한 없음</span>'}
@@ -801,7 +811,7 @@
             <td>${roleBadge}</td>
             <td class="actions">
               ${canManage && !isSuperAdmin ? `
-                <button class="btn btn-downgrade btn-small" onclick="showConfirm('toSharingFromOps', '${member.id}', '${member.displayName || member.email}')">
+                <button class="btn btn-to-sharing btn-small" onclick="showConfirm('toSharingFromOps', '${member.id}', '${member.displayName || member.email}')">
                   나눔회원으로
                 </button>
               ` : isSuperAdmin ? '<span style="color:#999">변경 불가</span>' : '<span style="color:#999">권한 없음</span>'}
