@@ -75,12 +75,12 @@
       // Firebase 앱이 초기화되지 않은 경우에만 초기화
       if (!firebase.apps.length) {
         firebase.initializeApp({
-          apiKey: "AIzaSyCOl5zvS29HOH5RGCR7cP_-WCzglddpNKM",
+          apiKey: "AIzaSyBJsqUJK1AjhrLNzIY_79dIR2Mlg7zD09w",
           authDomain: "gdeal-page-a67e2.firebaseapp.com",
           projectId: "gdeal-page-a67e2",
           storageBucket: "gdeal-page-a67e2.firebasestorage.app",
-          messagingSenderId: "309761797743",
-          appId: "1:309761797743:web:f0e10f2f8f05724f91335b"
+          messagingSenderId: "654155447220",
+          appId: "1:654155447220:web:be9c45c91314842d0150e1"
         });
       }
 
