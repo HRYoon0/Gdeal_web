@@ -453,7 +453,7 @@
         <div class="header">
           <h1>G-DEAL 관리자 패널</h1>
           <div class="header-info">
-            <span class="user-info">${currentUserData.name || currentUserData.email} (${roleText})</span>
+            <span class="user-info">${currentUserData.displayName || currentUserData.email} (${roleText})</span>
             <div class="header-buttons">
               <a href="/" class="btn btn-secondary">홈으로</a>
               <button class="btn btn-secondary" onclick="logout()">로그아웃</button>
@@ -682,15 +682,15 @@
 
       tbody.innerHTML = members.map(member => `
         <tr>
-          <td>${member.name || '-'}</td>
+          <td>${member.displayName || '-'}</td>
           <td>${member.email || '-'}</td>
           <td>${formatDate(member.createdAt)}</td>
           <td class="actions">
             ${canManage ? `
-              <button class="btn btn-approve btn-small" onclick="showConfirm('approve', '${member.id}', '${member.name || member.email}')">
+              <button class="btn btn-approve btn-small" onclick="showConfirm('approve', '${member.id}', '${member.displayName || member.email}')">
                 승인 (배움회원)
               </button>
-              <button class="btn btn-danger btn-small" onclick="showConfirm('reject', '${member.id}', '${member.name || member.email}')">
+              <button class="btn btn-danger btn-small" onclick="showConfirm('reject', '${member.id}', '${member.displayName || member.email}')">
                 거부
               </button>
             ` : '<span style="color:#999">권한 없음</span>'}
@@ -718,12 +718,12 @@
 
       tbody.innerHTML = members.map(member => `
         <tr>
-          <td>${member.name || '-'}</td>
+          <td>${member.displayName || '-'}</td>
           <td>${member.email || '-'}</td>
           <td>${formatDate(member.tierChangedAt || member.createdAt)}</td>
           <td class="actions">
             ${canManage ? `
-              <button class="btn btn-upgrade btn-small" onclick="showConfirm('toSharing', '${member.id}', '${member.name || member.email}')">
+              <button class="btn btn-upgrade btn-small" onclick="showConfirm('toSharing', '${member.id}', '${member.displayName || member.email}')">
                 나눔회원으로
               </button>
             ` : '<span style="color:#999">권한 없음</span>'}
@@ -751,15 +751,15 @@
 
       tbody.innerHTML = members.map(member => `
         <tr>
-          <td>${member.name || '-'}</td>
+          <td>${member.displayName || '-'}</td>
           <td>${member.email || '-'}</td>
           <td>${formatDate(member.tierChangedAt || member.createdAt)}</td>
           <td class="actions">
             ${canManage ? `
-              <button class="btn btn-downgrade btn-small" onclick="showConfirm('toLearning', '${member.id}', '${member.name || member.email}')">
+              <button class="btn btn-downgrade btn-small" onclick="showConfirm('toLearning', '${member.id}', '${member.displayName || member.email}')">
                 배움회원으로
               </button>
-              <button class="btn btn-upgrade btn-small" onclick="showConfirm('toOperations', '${member.id}', '${member.name || member.email}')">
+              <button class="btn btn-upgrade btn-small" onclick="showConfirm('toOperations', '${member.id}', '${member.displayName || member.email}')">
                 운영사무국으로
               </button>
             ` : '<span style="color:#999">권한 없음</span>'}
@@ -796,12 +796,12 @@
 
         return `
           <tr>
-            <td>${member.name || '-'}</td>
+            <td>${member.displayName || '-'}</td>
             <td>${member.email || '-'}</td>
             <td>${roleBadge}</td>
             <td class="actions">
               ${canManage && !isSuperAdmin ? `
-                <button class="btn btn-downgrade btn-small" onclick="showConfirm('toSharingFromOps', '${member.id}', '${member.name || member.email}')">
+                <button class="btn btn-downgrade btn-small" onclick="showConfirm('toSharingFromOps', '${member.id}', '${member.displayName || member.email}')">
                   나눔회원으로
                 </button>
               ` : isSuperAdmin ? '<span style="color:#999">변경 불가</span>' : '<span style="color:#999">권한 없음</span>'}
