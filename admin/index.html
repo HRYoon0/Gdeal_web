@@ -222,12 +222,12 @@
       font-weight: 500;
     }
     .badge-superadmin {
-      background: #7c3aed;
+      background: #66ae7d;
       color: white;
     }
-    .badge-admin {
-      background: #2563eb;
-      color: white;
+    .badge-operations {
+      background: #f3e8ff;
+      color: #6b21a8;
     }
     .badge-pending {
       background: #fbbf24;
@@ -802,7 +802,7 @@
         const isSuperAdmin = member.role === 'superAdmin';
         const roleBadge = isSuperAdmin
           ? '<span class="badge badge-superadmin">최고 관리자</span>'
-          : '<span class="badge badge-admin">운영사무국</span>';
+          : '<span class="badge badge-operations">운영사무국</span>';
 
         return `
           <tr>
