@@ -51,6 +51,30 @@
     delayedInit();
   }
 
+  // 모달 상태 감지 - 모달이 닫히면 버튼 표시, 열리면 숨김
+  let modalWasOpen = false;
+  const globalModalObserver = new MutationObserver(function() {
+    const modal = document.querySelector('.fixed.inset-0.z-50');
+    const pwaContainer = document.getElementById('pwa-install-container');
+
+    if (modal) {
+      // 모달 열림
+      modalWasOpen = true;
+      if (pwaContainer) {
+        pwaContainer.style.display = 'none';
+      }
+    } else if (modalWasOpen) {
+      // 모달 닫힘 - 버튼이 없으면 생성, 있으면 표시
+      modalWasOpen = false;
+      if (pwaContainer) {
+        pwaContainer.style.display = 'flex';
+      } else if (!installButton) {
+        initInstallButton();
+      }
+    }
+  });
+  globalModalObserver.observe(document.body, { childList: true, subtree: true });
+
   // 설치 버튼 생성 및 표시
   function showInstallButton() {
     // 이미 버튼이 있으면 중복 생성 방지
@@ -58,6 +82,9 @@
 
     // 홈 페이지에서만 작동
     if (!window.location.pathname.includes('/home')) return;
+
+    // 모달이 열려있으면 버튼 표시하지 않음
+    if (document.querySelector('.fixed.inset-0.z-50')) return;
 
     // 설치 버튼 생성
     installButton = document.createElement('a');
@@ -127,6 +154,7 @@
     if (header && header.nextSibling) {
       // 버튼을 감싸는 컨테이너 생성
       const container = document.createElement('div');
+      container.id = 'pwa-install-container';
       container.style.cssText = 'display: flex; justify-content: flex-end; padding: 8px 24px; background: white;';
 
       // 버튼에만 pointer-events 활성화

@@ -5,8 +5,20 @@
     "ignore": [
       "firebase.json",
       "**/.*",
+      "!.well-known",
       "**/node_modules/**",
       "functions/**"
+    ],
+    "headers": [
+      {
+        "source": "/.well-known/assetlinks.json",
+        "headers": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ]
+      }
     ],
     "rewrites": [
       {
