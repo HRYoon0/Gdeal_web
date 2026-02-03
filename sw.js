@@ -1,5 +1,5 @@
 // G-DEAL PWA Service Worker
-const CACHE_NAME = 'gdeal-v3';
+const CACHE_NAME = 'gdeal-v26';
 
 // Firebase Cloud Messaging
 importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js');
@@ -104,7 +104,12 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   // POST 요청은 캐시하지 않음 (Cache API는 GET만 지원)
   if (event.request.method !== 'GET') {
-    event.respondWith(fetch(event.request));
+    return;
+  }
+
+  // http/https 스킴만 캐시 가능 (chrome-extension 등 제외)
+  const url = new URL(event.request.url);
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
     return;
   }
 
