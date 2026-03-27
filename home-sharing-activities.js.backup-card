@@ -1,0 +1,227 @@
+/**
+ * 홈 페이지 - 최신 나눔활동 카드 렌더링
+ * CSS로 기존 슬라이더는 이미 숨겨져 있고, 헤더 아래에 카드를 삽입
+ */
+(function() {
+  'use strict';
+
+  var firebaseConfig = {
+    apiKey: "AIzaSyBJsqUJK1AjhrLNzIY_79dIR2Mlg7zD09w",
+    authDomain: "gdeal-page-a67e2.firebaseapp.com",
+    projectId: "gdeal-page-a67e2"
+  };
+
+  var CATEGORY_COLORS = {
+    '찾아가는 카페연수': { bg: '#dbeafe', color: '#1e40af' },
+    '디지털 수업실천 웨비나': { bg: '#dbeafe', color: '#1e40af' },
+    '디지털 별뉘': { bg: '#dbeafe', color: '#1e40af' },
+    '교육독서모임': { bg: '#ede9fe', color: '#5b21b6' },
+    '미니스터디': { bg: '#ede9fe', color: '#5b21b6' }
+  };
+
+  function getCatStyle(cat) { return CATEGORY_COLORS[cat] || { bg: '#f3f4f6', color: '#374151' }; }
+  function truncate(text, max) { return (!text || text.length <= max) ? (text || '') : text.substring(0, max) + '...'; }
+
+  function init() {
+    // 이미 삽입했으면 중복 방지
+    if (document.getElementById('sharing-cards-container')) return;
+
+    // "최신 나눔활동" 또는 "최신 소식" h2 찾기
+    var headings = document.querySelectorAll('h2');
+    var parentRelative = null;
+
+    for (var i = 0; i < headings.length; i++) {
+      var t = headings[i].textContent.trim();
+      if (t === '최신 소식' || t === '최신 나눔활동') {
+        headings[i].textContent = '최신 나눔활동';
+        parentRelative = headings[i].closest('.relative');
+        // 더보기 링크 수정
+        var link = parentRelative ? parentRelative.querySelector('a[href*="/training"]') : null;
+        if (link) link.href = '/sharing/';
+        break;
+      }
+    }
+
+    if (!parentRelative) return;
+
+    // 카드 컨테이너를 .relative 안에 추가 (헤더 아래, 숨겨진 슬라이더 뒤)
+    var container = document.createElement('div');
+    container.id = 'sharing-cards-container';
+    container.style.cssText = 'display:flex;flex-direction:column;gap:0.75rem;min-height:200px;padding:0.5rem 0;';
+
+    var loadingDiv = document.createElement('div');
+    loadingDiv.style.cssText = 'display:flex;align-items:center;justify-content:center;padding:3rem;color:#9ca3af;';
+    loadingDiv.textContent = '나눔활동을 불러오는 중...';
+    container.appendChild(loadingDiv);
+
+    parentRelative.appendChild(container);
+
+    loadFirebaseAndFetch(container);
+  }
+
+  function loadFirebaseAndFetch(container) {
+    if (typeof firebase !== 'undefined' && typeof firebase.firestore === 'function') {
+      fetchActivities(container);
+      return;
+    }
+    var scripts = [];
+    if (typeof firebase === 'undefined') {
+      scripts.push('https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js');
+      scripts.push('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js');
+    } else if (typeof firebase.firestore !== 'function') {
+      scripts.push('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js');
+    }
+    var loaded = 0;
+    function onLoad() {
+      loaded++;
+      if (loaded >= scripts.length) {
+        try { firebase.app(); } catch(e) { firebase.initializeApp(firebaseConfig); }
+        fetchActivities(container);
+      }
+    }
+    for (var i = 0; i < scripts.length; i++) {
+      var s = document.createElement('script');
+      s.src = scripts[i];
+      s.onload = onLoad;
+      document.head.appendChild(s);
+    }
+  }
+
+  function fetchActivities(container) {
+    try { firebase.app(); } catch(e) { firebase.initializeApp(firebaseConfig); }
+    var db = firebase.firestore();
+
+    db.collection('sharingActivities')
+      .orderBy('createdAt', 'desc')
+      .limit(10)
+      .get()
+      .then(function(snapshot) {
+        container.textContent = '';
+        // status가 활동중 + 날짜가 지나지 않은 것만 필터 (최대 5개)
+        var today = new Date().toISOString().split('T')[0];
+        var count = 0;
+        snapshot.forEach(function(doc) {
+          if (count >= 5) return;
+          var d = doc.data();
+          var st = d.status || '활동중';
+          if (st !== '활동중') return;
+          // 활동 날짜가 있고 오늘보다 과거이면 제외
+          if (d.activityDate && d.activityDate < today) return;
+          container.appendChild(createCard(d));
+          count++;
+        });
+        if (count === 0) {
+          var empty = document.createElement('div');
+          empty.style.cssText = 'padding:3rem;text-align:center;color:#9ca3af;font-size:0.9rem;background:#f9fafb;border-radius:0.75rem;';
+          empty.textContent = '등록된 나눔활동이 없습니다.';
+          container.appendChild(empty);
+        }
+      })
+      .catch(function(err) {
+        console.error('나눔활동 로드 실패:', err);
+        container.textContent = '';
+        var errDiv = document.createElement('div');
+        errDiv.style.cssText = 'padding:2rem;text-align:center;color:#9ca3af;';
+        errDiv.textContent = '나눔활동을 불러올 수 없습니다.';
+        container.appendChild(errDiv);
+      });
+  }
+
+  function createCard(data) {
+    var card = document.createElement('a');
+    card.href = '/sharing/';
+    card.style.cssText = 'display:block;padding:1rem 1.25rem;border:1px solid #e5e7eb;border-radius:0.75rem;background:white;text-decoration:none;transition:all 0.2s;cursor:pointer;';
+    card.addEventListener('mouseenter', function() { this.style.borderColor='#66ae7d'; this.style.boxShadow='0 2px 8px rgba(102,174,125,0.15)'; });
+    card.addEventListener('mouseleave', function() { this.style.borderColor='#e5e7eb'; this.style.boxShadow='none'; });
+
+    var topRow = document.createElement('div');
+    topRow.style.cssText = 'display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem;flex-wrap:wrap;';
+
+    var catStyle = getCatStyle(data.category);
+    var catBadge = document.createElement('span');
+    catBadge.style.cssText = 'display:inline-block;padding:0.15rem 0.5rem;border-radius:9999px;font-size:0.7rem;font-weight:600;background:'+catStyle.bg+';color:'+catStyle.color+';';
+    catBadge.textContent = data.category || '-';
+    topRow.appendChild(catBadge);
+
+    var statusBadge = document.createElement('span');
+    statusBadge.style.cssText = 'display:inline-flex;align-items:center;gap:0.2rem;padding:0.1rem 0.4rem;border-radius:9999px;font-size:0.65rem;font-weight:600;background:#dcfce7;color:#166534;border:1px solid #bbf7d0;';
+    var dot = document.createElement('span');
+    dot.style.cssText = 'display:inline-block;width:5px;height:5px;border-radius:50%;background:#22c55e;';
+    statusBadge.appendChild(dot);
+    statusBadge.appendChild(document.createTextNode(' 활동중'));
+    topRow.appendChild(statusBadge);
+
+    if (data.activityDate) {
+      var dateText = document.createElement('span');
+      dateText.style.cssText = 'font-size:0.75rem;color:#9ca3af;margin-left:auto;';
+      dateText.textContent = data.activityDate + (data.activityTime ? ' ' + data.activityTime : '');
+      topRow.appendChild(dateText);
+    }
+    card.appendChild(topRow);
+
+    var title = document.createElement('div');
+    title.style.cssText = 'font-size:1rem;font-weight:600;color:#1f2937;margin-bottom:0.35rem;';
+    title.textContent = data.name || '';
+    card.appendChild(title);
+
+    if (data.description) {
+      var desc = document.createElement('div');
+      desc.style.cssText = 'font-size:0.8rem;color:#6b7280;line-height:1.5;margin-bottom:0.4rem;white-space:pre-wrap;word-break:break-word;';
+      desc.textContent = truncate(data.description, 80);
+      card.appendChild(desc);
+    }
+
+    var bottomRow = document.createElement('div');
+    bottomRow.style.cssText = 'display:flex;align-items:center;gap:0.75rem;font-size:0.75rem;color:#9ca3af;';
+    if (data.creator) {
+      var creator = document.createElement('span');
+      creator.textContent = '개설: ' + data.creator;
+      bottomRow.appendChild(creator);
+    }
+    var cap = parseInt(data.capacity) || 0;
+    if (cap > 0) {
+      var capText = document.createElement('span');
+      capText.textContent = '정원: ' + (parseInt(data.appliedCount)||0) + '/' + cap;
+      bottomRow.appendChild(capText);
+    }
+    card.appendChild(bottomRow);
+    return card;
+  }
+
+  // 실행: React hydration 후 + 재시도
+  var retryCount = 0;
+  function tryInit() {
+    if (document.getElementById('sharing-cards-container')) return;
+    init();
+    if (!document.getElementById('sharing-cards-container') && retryCount < 20) {
+      retryCount++;
+      setTimeout(tryInit, 400);
+    }
+  }
+
+  // React 텍스트 덮어쓰기 방지용 Observer
+  var textObserver = new MutationObserver(function() {
+    var headings = document.querySelectorAll('h2');
+    for (var i = 0; i < headings.length; i++) {
+      if (headings[i].textContent.trim() === '최신 소식') {
+        headings[i].textContent = '최신 나눔활동';
+      }
+    }
+    var links = document.querySelectorAll('a[href="/training/"]');
+    for (var j = 0; j < links.length; j++) {
+      if (links[j].textContent.indexOf('더보기') >= 0) {
+        links[j].href = '/sharing/';
+      }
+    }
+  });
+
+  if (document.readyState === 'complete') {
+    setTimeout(tryInit, 500);
+    textObserver.observe(document.body, { childList: true, subtree: true });
+  } else {
+    window.addEventListener('load', function() {
+      setTimeout(tryInit, 500);
+      textObserver.observe(document.body, { childList: true, subtree: true });
+    });
+  }
+})();

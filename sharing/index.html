@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>나눔회원 | G-DEAL</title>
+<meta name="description" content="G-DEAL 나눔회원들의 활동을 관리하고 참여할 수 있습니다."/>
+<meta name="kakao:description" content="G-DEAL 나눔회원들의 활동을 관리하고 참여할 수 있습니다."/>
+<meta property="og:title" content="나눔회원 활동 | G-DEAL"/>
+<meta property="og:description" content="G-DEAL 나눔회원들의 활동을 관리하고 참여할 수 있습니다."/>
+<meta property="og:url" content="https://gdeal.io/sharing/"/>
+<meta property="og:site_name" content="G-DEAL"/>
+<meta property="og:locale" content="ko_KR"/>
+<meta property="og:image" content="https://gdeal.io/gdeal-og-image.png?v=10"/>
+<meta property="og:image:width" content="1200"/>
+<meta property="og:image:height" content="630"/>
+<meta property="og:image:alt" content="G-DEAL - 나눔회원 활동"/>
+<meta property="og:image:type" content="image/png"/>
+<meta property="og:type" content="website"/>
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:title" content="나눔회원 활동 | G-DEAL"/>
+<meta name="twitter:description" content="G-DEAL 나눔회원들의 활동을 관리하고 참여할 수 있습니다."/>
+<meta name="twitter:image" content="https://gdeal.io/gdeal-og-image.png?v=10"/>
+<link rel="manifest" href="/manifest.json"/>
+<link rel="shortcut icon" href="/G-DEAL_green.svg"/>
+<link rel="icon" href="/G-DEAL_green.svg"/>
+<link rel="apple-touch-icon" href="/G-DEAL_green.svg"/>
+<link rel="preload" href="https://cdn.jsdelivr.net/gh/projectnoonnu/2408-3@1.0/Paperlogy-4Regular.woff2" as="font" type="font/woff2" crossorigin/>
+<link rel="preload" href="https://cdn.jsdelivr.net/gh/projectnoonnu/2408-3@1.0/Paperlogy-5Medium.woff2" as="font" type="font/woff2" crossorigin/>
+<link rel="preload" href="https://cdn.jsdelivr.net/gh/projectnoonnu/2408-3@1.0/Paperlogy-6SemiBold.woff2" as="font" type="font/woff2" crossorigin/>
+<link rel="preload" href="https://cdn.jsdelivr.net/gh/projectnoonnu/2408-3@1.0/Paperlogy-7Bold.woff2" as="font" type="font/woff2" crossorigin/>
+<style>
+@font-face{font-family:'Paperlogy';src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/2408-3@1.0/Paperlogy-4Regular.woff2') format('woff2');font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:'Paperlogy';src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/2408-3@1.0/Paperlogy-5Medium.woff2') format('woff2');font-weight:500;font-style:normal;font-display:swap}
+@font-face{font-family:'Paperlogy';src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/2408-3@1.0/Paperlogy-6SemiBold.woff2') format('woff2');font-weight:600;font-style:normal;font-display:swap}
+@font-face{font-family:'Paperlogy';src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/2408-3@1.0/Paperlogy-7Bold.woff2') format('woff2');font-weight:700;font-style:normal;font-display:swap}
+*,*::before,*::after,body{font-family:'Paperlogy',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif!important;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+</style>
+<link rel="stylesheet" href="/_next/static/css/194cf32822e4365e.css"/>
+<link rel="stylesheet" href="/sharing/sharing.css"/>
+</head>
+<body class="font-sans antialiased">
+<div class="flex flex-col min-h-screen bg-white">
+<div class="flex flex-1 min-h-0 overflow-visible">
+
+<!-- 모바일 메뉴 버튼 -->
+<button id="mobileMenuBtn" class="fixed top-4 left-4 md:hidden bg-white rounded-lg p-2 shadow-lg border border-gray-200 w-11 h-11 flex items-center justify-center z-[30]">
+<svg class="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+</button>
+
+<!-- 데스크탑 사이드바 -->
+<div class="desktop-sidebar-container hidden md:block w-60 min-h-screen bg-white relative z-30 overflow-visible">
+<div class="p-2 min-h-full bg-white flex flex-col desktop-sidebar-content overflow-visible">
+<a class="flex items-center justify-center mb-2" href="/home/">
+<img src="/G-DEAL_green.svg" alt="G-DEAL 로고" class="w-40 h-40" style="object-fit:contain;object-position:center;margin-top:-16%;margin-bottom:-16%"/>
+</a>
+<nav class="space-y-2 desktop-nav">
+<a data-sidebar-link="true" style="display:flex;align-items:center;gap:0.75rem;padding:0.75rem 1rem;border-radius:0.5rem;font-weight:500;text-decoration:none;transition:all 0.2s ease-in-out;background-color:transparent;color:#374151;border:none;outline:none" href="/home/">
+<svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 20 20" aria-hidden="true" style="color:#66ae7d;font-size:1.125rem;flex-shrink:0" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path></svg>
+<span style="font-size:1rem;font-weight:500">홈</span></a>
+<a data-sidebar-link="true" style="display:flex;align-items:center;gap:0.75rem;padding:0.75rem 1rem;border-radius:0.5rem;font-weight:500;text-decoration:none;transition:all 0.2s ease-in-out;background-color:transparent;color:#374151;border:none;outline:none" href="/about/">
+<svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 16 16" style="color:#66ae7d;font-size:1.125rem;flex-shrink:0" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"></path><path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0"></path></svg>
+<span style="font-size:1rem;font-weight:500">소개</span></a>
+<a data-sidebar-link="true" style="display:flex;align-items:center;gap:0.75rem;padding:0.75rem 1rem;border-radius:0.5rem;font-weight:500;text-decoration:none;transition:all 0.2s ease-in-out;background-color:transparent;color:#374151;border:none;outline:none" href="/events/">
+<svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 24 24" style="color:#66ae7d;font-size:1.125rem;flex-shrink:0" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path fill="none" d="M0 0h24v24H0z"></path><path d="M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z"></path></svg>
+<span style="font-size:1rem;font-weight:500">대외행사</span></a>
+<a data-sidebar-link="true" style="display:flex;align-items:center;gap:0.75rem;padding:0.75rem 1rem;border-radius:0.5rem;font-weight:500;text-decoration:none;transition:all 0.2s ease-in-out;background-color:transparent;color:#374151;border:none;outline:none" href="/sharing/">
+<svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 20 20" aria-hidden="true" style="color:#66ae7d;font-size:1.125rem;flex-shrink:0" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"></path></svg>
+<span style="font-size:1rem;font-weight:500">나눔활동</span></a>
+<a data-sidebar-link="true" style="display:flex;align-items:center;gap:0.75rem;padding:0.75rem 1rem;border-radius:0.5rem;font-weight:500;text-decoration:none;transition:all 0.2s ease-in-out;background-color:transparent;color:#374151;border:none;outline:none" href="/resources/">
+<svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 20 20" aria-hidden="true" style="color:#66ae7d;font-size:1.125rem;flex-shrink:0" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"></path></svg>
+<span style="font-size:1rem;font-weight:500">자료공유</span></a>
+<a data-sidebar-link="true" style="display:flex;align-items:center;gap:0.75rem;padding:0.75rem 1rem;border-radius:0.5rem;font-weight:500;text-decoration:none;transition:all 0.2s ease-in-out;background-color:transparent;color:#374151;border:none;outline:none" href="/diary/">
+<svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 24 24" style="color:#66ae7d;font-size:1.125rem;flex-shrink:0" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path fill="none" d="M0 0h24v24H0z"></path><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a.996.996 0 0 0 0-1.41l-2.34-2.34a.996.996 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"></path></svg>
+<span style="font-size:1rem;font-weight:500">교단일기</span></a>
+
+</nav>
+<div class="mt-6 pb-6 desktop-circular-links-container">
+<div class="flex justify-center space-x-4 desktop-circular-links-wrapper">
+<div class="desktop-circular-diary-btn" style="display:none" onclick="location.href='/diary/'" style="display:flex;flex-direction:column;align-items:center;justify-content:center;width:80px;height:80px;border-radius:50%;background-color:#66ae7d;cursor:pointer;user-select:none;text-decoration:none;border:none;outline:none;box-shadow:0 8px 20px rgba(102,174,125,0.4),0 4px 12px rgba(0,0,0,0.15),0 2px 6px rgba(0,0,0,0.1);transition:all 0.3s cubic-bezier(0.4,0,0.2,1)">
+<svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 24 24" class="text-white text-lg mb-1" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path fill="none" d="M0 0h24v24H0z"></path><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a.996.996 0 0 0 0-1.41l-2.34-2.34a.996.996 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"></path></svg>
+<span class="text-white text-xs font-bold tracking-wide">교단일기</span>
+</div>
+
+<div class="desktop-circular-training-btn" style="display:none" onclick="location.href='/training/'" style="display:flex;flex-direction:column;align-items:center;justify-content:center;width:80px;height:80px;border-radius:50%;background-color:#66ae7d;cursor:pointer;user-select:none;text-decoration:none;border:none;outline:none;transform:translateY(0);filter:brightness(1);box-shadow:0 8px 20px rgba(102, 174, 125, 0.4), 0 4px 12px rgba(0, 0, 0, 0.15), 0 2px 6px rgba(0, 0, 0, 0.1);transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"><svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 20 20" aria-hidden="true" class="text-white text-lg mb-1" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z"></path></svg>
+<span class="text-white text-xs font-bold tracking-wide">월별연수</span>
+</div>
+</div>
+</div>
+<div class="flex-1 bg-white"></div>
+</div>
+</div>
+
+<!-- 모바일 사이드바 -->
+<div id="mobileSidebar" class="mobile-sidebar-container md:hidden fixed top-0 left-0 h-screen bg-white z-[60] transform transition-transform duration-300 -translate-x-full w-64">
+<div class="min-h-full bg-white flex flex-col mobile-sidebar-content overflow-visible">
+<div class="pt-16 px-2 pb-2 min-h-full flex flex-col">
+<a class="flex items-center justify-center mb-4" href="/home/">
+<img src="/G-DEAL_green.svg" alt="G-DEAL 로고" class="w-40 h-40" style="object-fit:contain;object-position:center;margin-top:-16%;margin-bottom:-16%"/>
+</a>
+<nav class="space-y-2 mobile-nav">
+<a data-sidebar-link="true" style="display:flex;align-items:center;gap:0.75rem;padding:0.75rem 1rem;border-radius:0.5rem;font-weight:500;text-decoration:none;transition:all 0.2s ease-in-out;background-color:transparent;color:#374151;border:none;outline:none" href="/home/">
+<svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 20 20" aria-hidden="true" style="color:#66ae7d;font-size:1.125rem;flex-shrink:0" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path></svg>
+<span style="font-size:1rem;font-weight:500">홈</span></a>
+<a data-sidebar-link="true" style="display:flex;align-items:center;gap:0.75rem;padding:0.75rem 1rem;border-radius:0.5rem;font-weight:500;text-decoration:none;transition:all 0.2s ease-in-out;background-color:transparent;color:#374151;border:none;outline:none" href="/about/">
+<svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 16 16" style="color:#66ae7d;font-size:1.125rem;flex-shrink:0" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"></path><path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0"></path></svg>
+<span style="font-size:1rem;font-weight:500">소개</span></a>
+<a data-sidebar-link="true" style="display:flex;align-items:center;gap:0.75rem;padding:0.75rem 1rem;border-radius:0.5rem;font-weight:500;text-decoration:none;transition:all 0.2s ease-in-out;background-color:transparent;color:#374151;border:none;outline:none" href="/events/">
+<svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 24 24" style="color:#66ae7d;font-size:1.125rem;flex-shrink:0" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path fill="none" d="M0 0h24v24H0z"></path><path d="M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z"></path></svg>
+<span style="font-size:1rem;font-weight:500">대외행사</span></a>
+<a data-sidebar-link="true" style="display:flex;align-items:center;gap:0.75rem;padding:0.75rem 1rem;border-radius:0.5rem;font-weight:500;text-decoration:none;transition:all 0.2s ease-in-out;background-color:transparent;color:#374151;border:none;outline:none" href="/sharing/">
+<svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 20 20" aria-hidden="true" style="color:#66ae7d;font-size:1.125rem;flex-shrink:0" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"></path></svg>
+<span style="font-size:1rem;font-weight:500">나눔활동</span></a>
+<a data-sidebar-link="true" style="display:flex;align-items:center;gap:0.75rem;padding:0.75rem 1rem;border-radius:0.5rem;font-weight:500;text-decoration:none;transition:all 0.2s ease-in-out;background-color:transparent;color:#374151;border:none;outline:none" href="/resources/">
+<svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 20 20" aria-hidden="true" style="color:#66ae7d;font-size:1.125rem;flex-shrink:0" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"></path></svg>
+<span style="font-size:1rem;font-weight:500">자료공유</span></a>
+<a data-sidebar-link="true" style="display:flex;align-items:center;gap:0.75rem;padding:0.75rem 1rem;border-radius:0.5rem;font-weight:500;text-decoration:none;transition:all 0.2s ease-in-out;background-color:transparent;color:#374151;border:none;outline:none" href="/diary/">
+<svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 24 24" style="color:#66ae7d;font-size:1.125rem;flex-shrink:0" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path fill="none" d="M0 0h24v24H0z"></path><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a.996.996 0 0 0 0-1.41l-2.34-2.34a.996.996 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"></path></svg>
+<span style="font-size:1rem;font-weight:500">교단일기</span></a>
+
+</nav>
+<div class="mt-6 pb-6 mobile-circular-links-container">
+<div class="flex justify-center space-x-4 mobile-circular-links-wrapper">
+<div onclick="location.href='/diary/'" style="display:flex;flex-direction:column;align-items:center;justify-content:center;width:80px;height:80px;border-radius:50%;background-color:#66ae7d;cursor:pointer;user-select:none;box-shadow:0 8px 20px rgba(102,174,125,0.4),0 4px 12px rgba(0,0,0,0.15),0 2px 6px rgba(0,0,0,0.1);transition:all 0.3s cubic-bezier(0.4,0,0.2,1)">
+<svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 24 24" class="text-white text-lg mb-1" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path fill="none" d="M0 0h24v24H0z"></path><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a.996.996 0 0 0 0-1.41l-2.34-2.34a.996.996 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"></path></svg>
+<span class="text-white text-xs font-bold tracking-wide">교단일기</span>
+</div>
+
+<div class="desktop-circular-training-btn" style="display:none" onclick="location.href='/training/'" style="display:flex;flex-direction:column;align-items:center;justify-content:center;width:80px;height:80px;border-radius:50%;background-color:#66ae7d;cursor:pointer;user-select:none;text-decoration:none;border:none;outline:none;transform:translateY(0);filter:brightness(1);box-shadow:0 8px 20px rgba(102, 174, 125, 0.4), 0 4px 12px rgba(0, 0, 0, 0.15), 0 2px 6px rgba(0, 0, 0, 0.1);transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"><svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 20 20" aria-hidden="true" class="text-white text-lg mb-1" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z"></path></svg>
+<span class="text-white text-xs font-bold tracking-wide">월별연수</span>
+</div>
+</div>
+</div>
+<div class="flex-1 bg-white"></div>
+</div>
+</div>
+</div>
+
+<!-- 모바일 사이드바 오버레이 -->
+<div id="mobileSidebarOverlay" class="md:hidden fixed inset-0 bg-black/50 z-[55] hidden" style="display:none;"></div>
+
+<!-- 메인 콘텐츠 -->
+<div class="flex-1 flex flex-col md:ml-0 overflow-hidden bg-white">
+<header class="bg-white px-6 py-4">
+<div class="flex items-center justify-end">
+<!-- 데스크톱 헤더 (원본과 동일 구조) -->
+<div id="desktopHeader" class="hidden md:flex items-center space-x-3 relative z-50">
+<div class="relative"><button class="p-2 text-gray-600 hover:text-black transition-colors relative z-50" title="검색"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg></button></div>
+</div>
+<!-- 모바일 헤더 -->
+<div id="mobileHeader" class="md:hidden flex items-center space-x-2 relative z-50">
+<div class="relative"><button class="p-2 text-gray-600 hover:text-black transition-colors relative z-50" title="검색"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg></button></div>
+</div>
+</div>
+</header>
+<main class="flex-1 overflow-auto bg-white">
+<div class="bg-white min-h-full">
+
+<!-- 초록색 헤더 배너 (기존 탭과 동일) -->
+<div class="bg-gradient-to-r from-[#66ae7d] to-[#497e56] text-white py-16 relative">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="mb-4">
+<h1 class="text-4xl font-bold mb-4">나눔회원 활동</h1>
+<p class="text-xl opacity-90">나눔회원들의 활동을 관리하고 참여할 수 있습니다</p>
+</div>
+</div>
+<div id="createBtnArea" class="absolute bottom-4 right-4"></div>
+</div>
+
+<div class="max-w-full mx-auto px-6 py-8">
+
+<!-- 로그인 안내 (비로그인 시) -->
+<div id="loginPrompt" class="login-prompt" style="display:none;">
+<p>활동을 개설하거나 신청하려면 로그인이 필요합니다.</p>
+<button onclick="location.href='/home/'" class="btn-submit">홈으로 이동</button>
+</div>
+
+<!-- 필터 -->
+<div class="filter-area" id="filterArea">
+<div class="filter-toggle" id="filterToggle">
+<span class="filter-toggle-text">🔍 검색 및 필터</span>
+<span class="filter-toggle-arrow" id="filterArrow">▼</span>
+</div>
+<div class="filter-body" id="filterBody" style="display:none;">
+<div class="filter-row">
+<div class="filter-group">
+<label class="filter-label">검색</label>
+<input type="text" id="filterSearch" class="filter-input" placeholder="활동명 또는 개설자 검색"/>
+</div>
+<div class="filter-group">
+<label class="filter-label">기간</label>
+<div class="filter-date-range">
+<input type="date" id="filterDateFrom" class="filter-input filter-date"/>
+<span class="filter-date-sep">~</span>
+<input type="date" id="filterDateTo" class="filter-input filter-date"/>
+</div>
+</div>
+</div>
+<div class="filter-row">
+<div class="filter-group">
+<label class="filter-label">나눔 영역</label>
+<div class="filter-checks" id="filterCategories">
+<label class="filter-check"><input type="checkbox" value="찾아가는 카페연수" checked/><span>찾아가는 카페연수</span></label>
+<label class="filter-check"><input type="checkbox" value="디지털 수업실천 웨비나" checked/><span>디지털 수업실천 웨비나</span></label>
+<label class="filter-check"><input type="checkbox" value="디지털 별뉘" checked/><span>디지털 별뉘</span></label>
+<label class="filter-check"><input type="checkbox" value="교육독서모임" checked/><span>교육독서모임</span></label>
+<label class="filter-check"><input type="checkbox" value="미니스터디" checked/><span>미니스터디</span></label>
+</div>
+</div>
+</div>
+<div class="filter-row">
+<div class="filter-group">
+<label class="filter-label">상태</label>
+<div class="filter-checks" id="filterStatus">
+<label class="filter-check"><input type="checkbox" value="활동중" checked/><span class="status-active" style="font-size:0.75rem">활동중</span></label>
+<label class="filter-check"><input type="checkbox" value="종료"/><span class="status-ended" style="font-size:0.75rem">종료</span></label>
+</div>
+</div>
+</div>
+<div class="filter-actions">
+<button type="button" class="btn-secondary" id="filterResetBtn">초기화</button>
+<span id="filterResultCount" class="filter-result-count"></span>
+</div>
+</div>
+</div>
+
+<!-- 로딩 -->
+<div id="loadingArea" class="loading-spinner">
+<div class="spinner"></div>
+</div>
+
+<!-- 활동 테이블 -->
+<div id="tableArea" class="sharing-table-container" style="display:none;">
+<table class="sharing-table">
+<thead>
+<tr>
+<th>상태</th>
+<th>나눔 영역</th>
+<th>활동명</th>
+<th>개설자</th>
+<th>일시</th>
+<th>장소/링크</th>
+<th>활동 내용</th>
+<th>정원</th>
+<th>작업</th>
+</tr>
+</thead>
+<tbody id="activityTableBody">
+</tbody>
+</table>
+</div>
+
+<!-- 빈 상태 -->
+<div id="emptyState" class="empty-state" style="display:none;">
+<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+<p>등록된 활동이 없습니다.</p>
+<p class="mt-2">새로운 활동을 개설해보세요!</p>
+</div>
+
+</div>
+</div>
+</main>
+</div>
+</div>
+
+<!-- 활동 개설/수정 모달 -->
+<div id="activityModal" class="modal-overlay">
+<div class="modal-content">
+<h3 id="modalTitle">활동 개설</h3>
+<form id="activityForm">
+<input type="hidden" id="editActivityId" value=""/>
+<div class="form-group">
+<label>나눔 영역 *</label>
+<input type="hidden" id="activityCategory" required/>
+<div class="custom-dropdown" id="categoryDropdown">
+<div class="custom-dropdown-selected" id="categorySelected">나눔 영역을 선택해주세요</div>
+<div class="custom-dropdown-list" id="categoryList">
+<div class="custom-dropdown-group">지식/경험나눔형</div>
+<div class="custom-dropdown-item" data-value="찾아가는 카페연수">찾아가는 카페연수</div>
+<div class="custom-dropdown-item" data-value="디지털 수업실천 웨비나">디지털 수업실천 웨비나</div>
+<div class="custom-dropdown-item" data-value="디지털 별뉘">디지털 별뉘</div>
+<div class="custom-dropdown-group">퍼실리테이션형</div>
+<div class="custom-dropdown-item" data-value="교육독서모임">교육독서모임</div>
+<div class="custom-dropdown-item" data-value="미니스터디">미니스터디</div>
+</div>
+</div>
+</div>
+<div class="form-group">
+<label for="activityName">활동명 *</label>
+<input type="text" id="activityName" required placeholder="활동명을 입력하세요"/>
+</div>
+<div class="form-group">
+<label for="activityDate">날짜 *</label>
+<input type="date" id="activityDate" required/>
+</div>
+<div class="form-group">
+<label for="activityTime">시간</label>
+<input type="time" id="activityTime" placeholder="예: 14:00"/>
+</div>
+<div class="form-group">
+<label for="activityLocation">장소 / 링크 <span style="font-weight:400;color:#9ca3af;font-size:0.75rem">(링크는 https:// 붙여주세요)</span></label>
+<input type="text" id="activityLocation" placeholder="장소 또는 참여 링크를 입력하세요"/>
+</div>
+<div class="form-group">
+<label for="capacity">정원</label>
+<input type="number" id="capacity" min="0" placeholder="0 = 제한 없음"/>
+<p class="form-hint">정원이 차도 신청은 계속 가능합니다.</p>
+</div>
+<div class="form-group">
+<label for="description">활동 내용</label>
+<textarea id="description" rows="3" placeholder="활동 내용을 설명해주세요"></textarea>
+</div>
+<div class="form-group">
+<label>📁 이미지 추가 방법 선택</label>
+<div class="photo-upload-area">
+<!-- 탭 선택 -->
+<div class="photo-tab-bar">
+<button type="button" class="photo-tab active" id="tabDrive">📁 G-DEAL 폴더 이미지</button>
+<button type="button" class="photo-tab" id="tabLink">🔗 링크 입력</button>
+</div>
+
+<!-- 드라이브 폴더 탐색 -->
+<div id="drivePanel" class="photo-panel">
+<div class="drive-header">
+<span class="drive-header-title">📁 G-DEAL 폴더 이미지 선택</span>
+<button type="button" class="drive-open-btn" id="openDriveBtn">🔗 드라이브 열기</button>
+</div>
+<div class="drive-breadcrumb">
+<span>📍</span>
+<span id="driveBreadcrumb">G-DEAL 나눔활동</span>
+</div>
+<div class="drive-status-bar">
+<span id="driveStatusLeft">📁 0개 폴더, 🖼️ 0개 이미지</span>
+<span id="driveStatusRight" class="drive-status-count">0개 추가됨</span>
+</div>
+<div class="drive-hint">이미지를 클릭하여 선택하세요</div>
+<div id="driveContents" class="drive-grid"></div>
+<div id="driveLoading" class="drive-loading" style="display:none;">
+<div class="drive-spinner"></div>
+<span>이미지 로딩 중...</span>
+</div>
+<div id="driveError" class="drive-error" style="display:none;"></div>
+<!-- 사용법 -->
+<div class="drive-usage-guide">
+<div class="guide-title">💡 사용법</div>
+<div class="guide-item">· <b>사진 업로드:</b> "🔗 드라이브 열기" 버튼을 사용하여 구글 드라이브에 사진을 업로드한 후, 여기서 선택하세요</div>
+<div class="guide-item">· <b>이미지 선택:</b> 이미지를 클릭하면 선택됩니다</div>
+<div class="guide-item">· <b>폴더 탐색:</b> 📁 폴더 아이콘을 클릭해서 하위 폴더로 이동</div>
+<div class="guide-item">· <b>상위 폴더:</b> "⬆ 상위 폴더" 버튼으로 이전 폴더로 이동</div>
+</div>
+</div>
+
+<!-- 링크 입력 -->
+<div id="linkPanel" class="photo-panel" style="display:none;">
+<div class="link-input-area">
+<input type="text" id="photoUrlInput" placeholder="구글 드라이브 이미지 URL을 붙여넣으세요 (https://drive.google.com/...)"/>
+<button type="button" class="btn-apply" id="addUrlBtn">추가</button>
+</div>
+<p class="form-hint">구글 드라이브에서 이미지를 우클릭 → "링크 가져오기" 후 붙여넣으세요</p>
+</div>
+
+<!-- 선택된 이미지 미리보기 -->
+<div id="photoPreviewArea" class="photo-preview-grid"></div>
+</div>
+</div>
+<div class="form-actions">
+<button type="button" class="btn-secondary" onclick="closeModal()">취소</button>
+<button type="submit" class="btn-submit" id="submitBtn">개설하기</button>
+</div>
+</form>
+</div>
+</div>
+
+<!-- 활동 상세 모달 -->
+<div id="detailModal" class="modal-overlay">
+<div class="modal-content modal-detail-content">
+<h3 id="detailTitle">활동 상세</h3>
+<div id="detailContent" class="modal-detail-scroll"></div>
+<div class="form-actions modal-detail-footer">
+<button type="button" class="btn-secondary" onclick="closeDetailModal()">닫기</button>
+<button type="button" class="btn-apply" id="detailApplyBtn" style="display:none;">신청하기</button>
+</div>
+</div>
+</div>
+
+<!-- 이미지 라이트박스 -->
+<div id="lightbox" class="lightbox-overlay">
+<button class="lightbox-close" id="lightboxClose">✕</button>
+<button class="lightbox-nav lightbox-prev" id="lightboxPrev">‹</button>
+<img id="lightboxImg" src="" alt=""/>
+<button class="lightbox-nav lightbox-next" id="lightboxNext">›</button>
+<div class="lightbox-counter" id="lightboxCounter"></div>
+</div>
+
+<!-- 토스트 -->
+<div id="toast" class="toast"></div>
+
+<!-- 푸터 -->
+<footer class="bg-[#66ae7d] mt-auto">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+<div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+<div class="space-y-4">
+<h3 class="text-lg font-semibold text-white mb-4">G-DEAL</h3>
+<p class="text-white/80 text-sm leading-relaxed">교육 혁신을 위한 플랫폼<br/>더 나은 교육을 위한 소통과 나눔의 공간</p>
+</div>
+<div class="space-y-4">
+<h3 class="text-lg font-semibold text-white mb-4">바로가기</h3>
+<div class="space-y-3">
+<a target="_blank" rel="noopener noreferrer" class="flex items-center space-x-2 text-white/80 hover:text-white transition-colors text-sm" href="https://docs.google.com/document/u/3/d/e/2PACX-1vTcwZvodisKxTNOgLJH80iYsnHMlf6DkAPoi2j7egl1DYUFSPGCRGtajgXI-d-Y5Wz9NAzM1yD7w431/pub">
+<svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true" class="text-lg" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
+<span>G-DEAL 정관</span></a>
+<a target="_blank" rel="noopener noreferrer" class="flex items-center space-x-2 text-white/80 hover:text-white transition-colors text-sm" href="https://docs.google.com/forms/d/e/1FAIpQLSeFRB4DL6X3I77R9ksukcSvs-f-B0zVcxduF2_LPNxdQXDTGA/viewform">
+<svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true" class="text-lg" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
+<span>활동 신청서</span></a>
+</div>
+</div>
+<div class="space-y-4">
+<h3 class="text-lg font-semibold text-white mb-4">소셜 미디어</h3>
+<div class="flex space-x-4">
+<a target="_blank" rel="noopener noreferrer" class="flex items-center justify-center w-10 h-10 hover:scale-105 transition-transform" title="카카오톡 채널" href="https://pf.kakao.com/_LxbsHG">
+<img src="/kakao-channel-logo.png" alt="카카오톡 채널" class="w-10 h-10 object-contain"/></a>
+<a target="_blank" rel="noopener noreferrer" class="flex items-center justify-center w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full hover:from-purple-600 hover:to-pink-600 transition-colors" title="인스타그램" href="https://www.instagram.com/gdeal.io">
+<svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 448 512" class="text-lg" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M224.1 141c-63.6 0-114.9 51.3-114.9 114.9s51.3 114.9 114.9 114.9S339 319.5 339 255.9 287.7 141 224.1 141zm0 189.6c-41.1 0-74.7-33.5-74.7-74.7s33.5-74.7 74.7-74.7 74.7 33.5 74.7 74.7-33.6 74.7-74.7 74.7zm146.4-194.3c0 14.9-12 26.8-26.8 26.8-14.9 0-26.8-12-26.8-26.8s12-26.8 26.8-26.8 26.8 12 26.8 26.8zm76.1 27.2c-1.7-35.9-9.9-67.7-36.2-93.9-26.2-26.2-58-34.4-93.9-36.2-37-2.1-147.9-2.1-184.9 0-35.8 1.7-67.6 9.9-93.9 36.1s-34.4 58-36.2 93.9c-2.1 37-2.1 147.9 0 184.9 1.7 35.9 9.9 67.7 36.2 93.9s58 34.4 93.9 36.2c37 2.1 147.9 2.1 184.9 0 35.9-1.7 67.7-9.9 93.9-36.2 26.2-26.2 34.4-58 36.2-93.9 2.1-37 2.1-147.8 0-184.8zM398.8 388c-7.8 19.6-22.9 34.7-42.6 42.6-29.5 11.7-99.5 9-132.1 9s-102.7 2.6-132.1-9c-19.6-7.8-34.7-22.9-42.6-42.6-11.7-29.5-9-99.5-9-132.1s-2.6-102.7 9-132.1c7.8-19.6 22.9-34.7 42.6-42.6 29.5-11.7 99.5-9 132.1-9s102.7-2.6 132.1 9c19.6 7.8 34.7 22.9 42.6 42.6 11.7 29.5 9 99.5 9 132.1s2.7 102.7-9 132.1z"></path></svg></a>
+</div>
+</div>
+</div>
+<div class="border-t border-white/20 mt-8 pt-8">
+<div class="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
+<div class="text-sm text-white/70">&copy; 2024 G-DEAL. All rights reserved.</div>
+<div class="text-sm text-white/70">교육의 혁신, G-DEAL과 함께</div>
+</div>
+</div>
+</div>
+</footer>
+</div>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script src="/sharing/sharing.js"></script>
+</body>
+</html>

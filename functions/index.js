@@ -1,6 +1,7 @@
 /**
  * G-DEAL Cloud Functions
  * 자료 등록 시 FCM 푸시 알림 발송
+ * (나눔회원 활동 관리는 Google Apps Script로 이관됨)
  */
 
 const functions = require('firebase-functions');
