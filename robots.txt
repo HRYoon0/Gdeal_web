@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+
+# 검색에서 제외할 페이지
+Disallow: /admin/
+Disallow: /install/
+Disallow: /_next/
+
+# 사이트맵
+Sitemap: https://gdeal.io/sitemap.xml
