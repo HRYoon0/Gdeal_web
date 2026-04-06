@@ -57,7 +57,8 @@
           events: true,      // 대외행사
           training: true,    // 월별연수
           resources: true,   // 자료공유
-          diary: true        // 교단일기
+          diary: true,       // 교단일기
+          sharing: true      // 나눔활동
         }
       }, { merge: true });
 

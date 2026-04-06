@@ -37,6 +37,12 @@ const notificationConfig = {
     icon: '/icons/icon-192x192.png',
     tag: 'diary',
     url: '/diary/'
+  },
+  sharing: {
+    title: '새 나눔활동이 개설되었습니다',
+    icon: '/icons/icon-192x192.png',
+    tag: 'sharing',
+    url: '/sharing/'
   }
 };
 
@@ -225,6 +231,30 @@ exports.onDiaryCreated = functions.firestore
     }, {
       type: 'diary',
       diaryId: context.params.diaryId,
+      url: config.url
+    });
+  });
+
+// 나눔활동 개설 시 알림
+exports.onSharingActivityCreated = functions.firestore
+  .document('sharingActivities/{activityId}')
+  .onCreate(async (snap, context) => {
+    const activityData = snap.data();
+    const config = notificationConfig.sharing;
+    const categoryText = activityData.category ? `[${activityData.category}] ` : '';
+
+    const tokens = await getActiveTokens('sharing');
+    console.log(`나눔활동 알림 발송 대상: ${tokens.length}명`);
+
+    await sendPushNotification(tokens, {
+      title: config.title,
+      body: categoryText + (activityData.name || '새로운 나눔활동을 확인해보세요.'),
+      icon: config.icon,
+      tag: config.tag,
+      url: config.url
+    }, {
+      type: 'sharing',
+      activityId: context.params.activityId,
       url: config.url
     });
   });
