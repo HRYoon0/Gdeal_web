@@ -206,7 +206,7 @@ exports.onResourceCreated = functions.firestore
 
 // 교단일기 등록 시 알림
 exports.onDiaryCreated = functions.firestore
-  .document('diary/{diaryId}')
+  .document('diaries/{diaryId}')
   .onCreate(async (snap, context) => {
     const diaryData = snap.data();
     const config = notificationConfig.diary;
