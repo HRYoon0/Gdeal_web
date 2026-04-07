@@ -1,5 +1,5 @@
 // G-DEAL PWA Service Worker
-const CACHE_NAME = 'gdeal-v29';
+const CACHE_NAME = 'gdeal-v30';
 
 // Firebase Cloud Messaging
 importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js');
@@ -38,26 +38,39 @@ messaging.onBackgroundMessage((payload) => {
   return self.registration.showNotification(notificationTitle, notificationOptions);
 });
 
-// 알림 클릭 이벤트
+// 알림 클릭 이벤트 - 해당 탭으로 이동
 self.addEventListener('notificationclick', (event) => {
   console.log('알림 클릭:', event);
   event.notification.close();
 
   if (event.action === 'close') return;
 
+  // 알림에 저장된 URL로 이동 (예: /sharing/, /diary/)
   const urlToOpen = event.notification.data?.url || '/home/';
+  // 절대 URL로 변환 (client.navigate는 절대 URL이 더 안정적)
+  const absoluteUrl = new URL(urlToOpen, self.location.origin).href;
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true })
       .then((windowClients) => {
+        // 1) 정확히 같은 URL의 창이 이미 있으면 포커스만
         for (const client of windowClients) {
-          if (client.url.includes(self.location.origin) && 'focus' in client) {
-            client.navigate(urlToOpen);
+          if (client.url === absoluteUrl && 'focus' in client) {
             return client.focus();
           }
         }
-        return clients.openWindow(urlToOpen);
+        // 2) 같은 origin의 다른 창이 있으면 그 창에서 이동
+        for (const client of windowClients) {
+          if (client.url.startsWith(self.location.origin) && 'navigate' in client) {
+            return client.navigate(absoluteUrl).then((c) => (c || client).focus());
+          }
+        }
+        // 3) 열려있는 창이 없으면 새 창
+        if (clients.openWindow) {
+          return clients.openWindow(absoluteUrl);
+        }
       })
+      .catch((err) => console.error('알림 클릭 처리 실패:', err))
   );
 });
 const urlsToCache = [

@@ -123,16 +123,16 @@
         console.log('알림 권한이 거부되었습니다.');
       }
 
-      // 포그라운드 메시지 수신 처리
+      // 포그라운드 메시지 수신 처리 (data-only 메시지 기준)
       messaging.onMessage((payload) => {
         console.log('포그라운드 메시지 수신:', payload);
 
-        // 포그라운드에서 알림 표시
-        const notificationTitle = payload.notification?.title || 'G-DEAL 알림';
+        // Cloud Function에서 data-only로 보내므로 payload.data에서 값을 읽음
+        const notificationTitle = payload.data?.title || payload.notification?.title || 'G-DEAL 알림';
         const notificationOptions = {
-          body: payload.notification?.body || '새로운 소식이 있습니다.',
-          icon: '/icons/icon-192x192.png',
-          badge: '/icons/icon-72x72.png',
+          body: payload.data?.body || payload.notification?.body || '새로운 소식이 있습니다.',
+          icon: payload.data?.icon || '/icon-192.png',
+          badge: '/icon-badge.svg',
           tag: payload.data?.tag || 'gdeal-notification',
           data: payload.data
         };
@@ -142,8 +142,12 @@
           const notification = new Notification(notificationTitle, notificationOptions);
           notification.onclick = () => {
             window.focus();
-            if (payload.data?.url) {
-              window.location.href = payload.data.url;
+            const url = payload.data?.url;
+            if (url) {
+              // 같은 도메인이면 현재 창에서 이동, 아니면 새 창
+              if (window.location.pathname !== url) {
+                window.location.href = url;
+              }
             }
             notification.close();
           };
