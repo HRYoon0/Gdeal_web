@@ -84,25 +84,17 @@ async function sendPushNotification(tokens, notification, data) {
     return;
   }
 
+  // data-only 메시지: Service Worker의 onBackgroundMessage에서 단독으로 표시
+  // notification 필드를 보내면 FCM이 자동 표시 + SW 수동 표시로 중복 알림이 발생함
   const message = {
-    notification: {
-      title: notification.title,
-      body: notification.body
-    },
     data: {
       ...data,
+      title: notification.title,
+      body: notification.body,
+      icon: notification.icon,
+      tag: notification.tag,
+      url: notification.url,
       click_action: 'FLUTTER_NOTIFICATION_CLICK'
-    },
-    webpush: {
-      notification: {
-        icon: notification.icon,
-        badge: '/icons/icon-72x72.png',
-        tag: notification.tag,
-        requireInteraction: true
-      },
-      fcmOptions: {
-        link: notification.url
-      }
     },
     tokens: tokens
   };
@@ -258,6 +250,58 @@ exports.onSharingActivityCreated = functions.firestore
       url: config.url
     });
   });
+
+// 일회성 마이그레이션: 기존 FCM 토큰에 sharing 구독 추가
+// 호출 방법: https://us-central1-gdeal-page-a67e2.cloudfunctions.net/migrateAddSharingSubscription
+exports.migrateAddSharingSubscription = functions.https.onRequest(async (req, res) => {
+  res.set('Access-Control-Allow-Origin', '*');
+
+  try {
+    const snapshot = await db.collection('fcm_tokens').get();
+    let updated = 0;
+    let skipped = 0;
+    let batch = db.batch();
+    let batchCount = 0;
+
+    for (const doc of snapshot.docs) {
+      const data = doc.data();
+      // 이미 sharing 필드가 있으면 스킵
+      if (data.subscriptions && data.subscriptions.sharing !== undefined) {
+        skipped++;
+        continue;
+      }
+
+      // subscriptions.sharing = true 추가
+      batch.update(doc.ref, {
+        'subscriptions.sharing': true
+      });
+      batchCount++;
+      updated++;
+
+      // Firestore batch 한계(500개)마다 커밋
+      if (batchCount >= 500) {
+        await batch.commit();
+        batch = db.batch();
+        batchCount = 0;
+      }
+    }
+
+    if (batchCount > 0) {
+      await batch.commit();
+    }
+
+    res.status(200).json({
+      success: true,
+      total: snapshot.size,
+      updated: updated,
+      skipped: skipped,
+      message: `${updated}개 토큰에 sharing 구독을 추가했습니다. (${skipped}개는 이미 있음)`
+    });
+  } catch (error) {
+    console.error('마이그레이션 실패:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
 
 // 테스트용 HTTP 함수 (알림 수동 발송)
 exports.sendTestNotification = functions.https.onRequest(async (req, res) => {

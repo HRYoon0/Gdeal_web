@@ -1,5 +1,5 @@
 // G-DEAL PWA Service Worker
-const CACHE_NAME = 'gdeal-v26';
+const CACHE_NAME = 'gdeal-v27';
 
 // Firebase Cloud Messaging
 importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js');
@@ -16,17 +16,19 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-// 백그라운드 메시지 수신
+// 백그라운드 메시지 수신 (data-only 메시지)
 messaging.onBackgroundMessage((payload) => {
   console.log('백그라운드 메시지 수신:', payload);
 
-  const notificationTitle = payload.notification?.title || 'G-DEAL 알림';
+  // Cloud Function에서 data-only로 보내므로 payload.data에서 값을 읽음
+  const notificationTitle = payload.data?.title || payload.notification?.title || 'G-DEAL 알림';
   const notificationOptions = {
-    body: payload.notification?.body || '새로운 소식이 있습니다.',
-    icon: '/icons/icon-192x192.png',
+    body: payload.data?.body || payload.notification?.body || '새로운 소식이 있습니다.',
+    icon: payload.data?.icon || '/icons/icon-192x192.png',
     badge: '/icons/icon-72x72.png',
     tag: payload.data?.tag || 'gdeal-notification',
     data: payload.data,
+    requireInteraction: true,
     actions: [
       { action: 'open', title: '열기' },
       { action: 'close', title: '닫기' }
