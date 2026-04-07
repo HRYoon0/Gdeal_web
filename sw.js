@@ -1,5 +1,5 @@
 // G-DEAL PWA Service Worker
-const CACHE_NAME = 'gdeal-v27';
+const CACHE_NAME = 'gdeal-v28';
 
 // Firebase Cloud Messaging
 importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js');
@@ -24,8 +24,8 @@ messaging.onBackgroundMessage((payload) => {
   const notificationTitle = payload.data?.title || payload.notification?.title || 'G-DEAL 알림';
   const notificationOptions = {
     body: payload.data?.body || payload.notification?.body || '새로운 소식이 있습니다.',
-    icon: payload.data?.icon || '/icons/icon-192x192.png',
-    badge: '/icons/icon-72x72.png',
+    icon: payload.data?.icon || '/icon-192.png',
+    badge: '/icon-192.png',
     tag: payload.data?.tag || 'gdeal-notification',
     data: payload.data,
     requireInteraction: true,

@@ -16,31 +16,31 @@ const messaging = admin.messaging();
 const notificationConfig = {
   events: {
     title: '새 대외행사가 등록되었습니다',
-    icon: '/icons/icon-192x192.png',
+    icon: '/icon-192.png',
     tag: 'events',
     url: '/events/'
   },
   trainings: {
     title: '새 월별연수가 등록되었습니다',
-    icon: '/icons/icon-192x192.png',
+    icon: '/icon-192.png',
     tag: 'training',
     url: '/training/'
   },
   resources: {
     title: '새 자료가 공유되었습니다',
-    icon: '/icons/icon-192x192.png',
+    icon: '/icon-192.png',
     tag: 'resources',
     url: '/resources/'
   },
   diary: {
     title: '새 교단일기가 등록되었습니다',
-    icon: '/icons/icon-192x192.png',
+    icon: '/icon-192.png',
     tag: 'diary',
     url: '/diary/'
   },
   sharing: {
     title: '새 나눔활동이 개설되었습니다',
-    icon: '/icons/icon-192x192.png',
+    icon: '/icon-192.png',
     tag: 'sharing',
     url: '/sharing/'
   }
@@ -329,7 +329,7 @@ exports.sendTestNotification = functions.https.onRequest(async (req, res) => {
     await sendPushNotification(tokens, {
       title: 'G-DEAL 테스트 알림',
       body: '알림이 정상적으로 작동하고 있습니다!',
-      icon: '/icons/icon-192x192.png',
+      icon: '/icon-192.png',
       tag: 'test',
       url: '/home/'
     }, {
