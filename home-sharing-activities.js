@@ -38,7 +38,18 @@
     '.feed-dot.active { background:#66ae7d; width:24px; border-radius:4px; }',
     '.feed-nav-btn { position:absolute; top:50%; transform:translateY(-50%); background:rgba(255,255,255,0.7); backdrop-filter:blur(4px); border:1px solid rgba(0,0,0,0.08); border-radius:50%; width:28px; height:28px; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:0.9rem; color:#66ae7d; transition:all 0.2s; z-index:5; opacity:0.6; }',
     '.feed-nav-btn:hover { opacity:1; background:rgba(255,255,255,0.95); color:#497e56; box-shadow:0 2px 8px rgba(0,0,0,0.1); }',
-    '.feed-counter { font-size:0.75rem; color:#9ca3af; text-align:center; margin-top:0.25rem; }'
+    '.feed-counter { font-size:0.75rem; color:#9ca3af; text-align:center; margin-top:0.25rem; }',
+    // ===== 모바일 전용 오버라이드 (768px 미만) =====
+    '@media (max-width: 768px) {',
+    '  #sharing-cards-container { grid-template-columns: 1fr !important; gap: 0.75rem !important; }',
+    // 활동 현황 카드 내부 4스탯을 4열 한 줄로 배치하여 높이 감소
+    '  #sharing-cards-container > div:nth-child(2) > div:last-child { grid-template-columns: repeat(4, 1fr) !important; }',
+    // 다가오는 일정 카드를 살짝 컴팩트하게
+    '  #sharing-cards-container > div:nth-child(3) { padding: 0.85rem !important; }',
+    // 피드 카드 내부 패딩 조정
+    '  .feed-card-inner > div:last-child { padding: 0.85rem 1rem !important; }',
+    '  .feed-nav-btn { width: 32px !important; height: 32px !important; opacity: 0.85 !important; }',
+    '}'
   ].join('\n');
   document.head.appendChild(style);
 
@@ -326,22 +337,45 @@
     counter.textContent = '1 / ' + cards.length;
     container.appendChild(counter);
 
-    // 높이 계산 (첫 렌더 후)
-    setTimeout(function() {
+    // 슬라이더 높이 계산 함수 (재사용 가능)
+    function recalcHeight() {
+      var newMax = 0;
       for (var hi = 0; hi < slideElements.length; hi++) {
-        slideElements[hi].style.position = 'relative';
-        slideElements[hi].style.visibility = 'hidden';
-        slideElements[hi].style.display = 'block';
-        var h = slideElements[hi].offsetHeight;
-        if (h > maxHeight) maxHeight = h;
-        slideElements[hi].style.position = '';
-        slideElements[hi].style.visibility = '';
-        slideElements[hi].style.display = '';
+        var el = slideElements[hi];
+        var prevPos = el.style.position;
+        var prevVis = el.style.visibility;
+        var prevAct = el.classList.contains('active');
+        el.style.position = 'relative';
+        el.style.visibility = 'hidden';
+        if (!prevAct) el.classList.add('active');
+        var h = el.offsetHeight;
+        if (h > newMax) newMax = h;
+        el.style.position = prevPos;
+        el.style.visibility = prevVis;
+        if (!prevAct) el.classList.remove('active');
       }
-      if (maxHeight > 0) slideArea.style.height = maxHeight + 'px';
+      if (newMax > 0) {
+        maxHeight = newMax;
+        slideArea.style.height = newMax + 'px';
+      }
+    }
+
+    // 첫 렌더 후 측정 (DOM이 안정된 후)
+    setTimeout(function() {
+      recalcHeight();
       // 첫 슬라이드 활성화
       slideElements[0].classList.add('active');
     }, 100);
+
+    // 폰트가 늦게 로드되는 경우 대비 - 추가 측정
+    setTimeout(recalcHeight, 800);
+
+    // 화면 회전 / 리사이즈 시 재측정 (디바운스)
+    var resizeTimer;
+    window.addEventListener('resize', function() {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(recalcHeight, 200);
+    });
 
     function goTo(idx) {
       if (idx === currentIndex) return;
