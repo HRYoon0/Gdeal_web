@@ -1094,28 +1094,127 @@
   white-space: pre-wrap;
 }
 
-/* 반응형 */
+/* ===== 반응형: 모바일 카드 레이아웃 (768px 미만) ===== */
 @media (max-width: 768px) {
-  .sharing-table {
-    font-size: 0.8125rem;
-  }
-
-  .sharing-table th,
-  .sharing-table td {
-    padding: 0.5rem 0.75rem;
-  }
-
+  /* 모달 */
   .modal-content {
     padding: 1.5rem;
     margin: 1rem;
   }
-
   .detail-row {
     flex-direction: column;
     gap: 0.25rem;
   }
-
   .detail-label {
     width: auto;
+  }
+
+  /* 테이블 → 카드 전환 */
+  .sharing-table-container {
+    overflow-x: visible;
+    background: transparent;
+    padding: 0;
+    border: none;
+    box-shadow: none;
+  }
+  .sharing-table {
+    display: block;
+    background: transparent;
+    border-collapse: separate;
+  }
+  .sharing-table thead {
+    display: none;
+  }
+  .sharing-table tbody {
+    display: block;
+  }
+  .sharing-table tr {
+    display: block;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 0.85rem 1rem 0.75rem;
+    margin-bottom: 0.75rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    position: relative;
+  }
+  /* 컬럼 너비 비율 무력화 */
+  .sharing-table td,
+  .sharing-table th {
+    width: auto !important;
+  }
+  .sharing-table td {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    padding: 0.3rem 0;
+    border: none;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    white-space: normal;
+  }
+  .sharing-table td::before {
+    flex: 0 0 68px;
+    font-weight: 600;
+    color: #9ca3af;
+    font-size: 0.72rem;
+    letter-spacing: 0.02em;
+    text-transform: none;
+    padding-top: 0.15rem;
+  }
+  /* 컬럼별 라벨 (nth-child 순서: 상태/나눔영역/활동명/개설자/일시/장소/내용/정원/작업) */
+  .sharing-table td:nth-child(2)::before { content: '영역'; }
+  .sharing-table td:nth-child(4)::before { content: '개설자'; }
+  .sharing-table td:nth-child(5)::before { content: '일시'; }
+  .sharing-table td:nth-child(6)::before { content: '장소/링크'; }
+  .sharing-table td:nth-child(7)::before { content: '내용'; }
+  .sharing-table td:nth-child(8)::before { content: '정원'; }
+
+  /* 1: 상태 — 카드 우상단에 절대 배치 */
+  .sharing-table td:nth-child(1) {
+    position: absolute;
+    top: 0.85rem;
+    right: 1rem;
+    padding: 0;
+  }
+  .sharing-table td:nth-child(1)::before { display: none; }
+
+  /* 3: 활동명 — 카드 헤더로 크게 */
+  .sharing-table td:nth-child(3) {
+    display: block;
+    font-size: 1.02rem;
+    font-weight: 700;
+    color: #1f2937;
+    padding: 0 3.5rem 0.55rem 0;
+    margin-bottom: 0.4rem;
+    border-bottom: 1px solid #f3f4f6;
+  }
+  .sharing-table td:nth-child(3)::before { display: none; }
+
+  /* 장소/링크는 줄바꿈 자유롭게 */
+  .sharing-table td:nth-child(6) a {
+    word-break: break-all;
+  }
+
+  /* 9: 작업 — 카드 하단 풀폭 버튼 행 */
+  .sharing-table td:nth-child(9) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    padding-top: 0.7rem;
+    margin-top: 0.5rem;
+    border-top: 1px solid #f3f4f6;
+  }
+  .sharing-table td:nth-child(9):empty {
+    display: none;
+  }
+  .sharing-table td:nth-child(9)::before { display: none; }
+  .sharing-table td:nth-child(9) .btn-table-action {
+    flex: 1 1 calc(50% - 0.2rem);
+    min-height: 38px;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    justify-content: center;
+    margin-left: 0;  /* 데스크톱 전용 margin 제거 (gap으로 간격 처리) */
   }
 }

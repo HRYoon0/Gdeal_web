@@ -604,7 +604,7 @@
         tr.appendChild(tdDate);
 
         var tdLocation = document.createElement('td');
-        renderTextWithLinks(tdLocation, truncate(a.location || '-', 30));
+        renderTextWithLinks(tdLocation, a.location || '-', 30);
         tr.appendChild(tdLocation);
 
         var tdDesc = document.createElement('td');
@@ -984,19 +984,46 @@
     return '';
   }
 
-  function renderTextWithLinks(container, text) {
+  // maxDisplayLen 지정 시, 표시 텍스트만 잘라서 '...' 처리. href에는 항상 원본 URL 전체 유지.
+  function renderTextWithLinks(container, text, maxDisplayLen) {
     if (!text) { container.textContent = '-'; return; }
     var urlRegex = /(https?:\/\/[^\s,]+)/g;
     var parts = text.split(urlRegex);
+    var used = 0;
+    var truncated = false;
     for (var i = 0; i < parts.length; i++) {
-      if (urlRegex.test(parts[i])) {
+      var part = parts[i];
+      if (!part) continue;
+      var isUrl = /^https?:\/\//.test(part);
+      var remaining = maxDisplayLen ? (maxDisplayLen - used) : Infinity;
+      if (remaining <= 0) { truncated = true; break; }
+
+      var displayText;
+      if (part.length > remaining) {
+        displayText = part.substring(0, Math.max(remaining, 8));
+        truncated = true;
+      } else {
+        displayText = part;
+      }
+
+      if (isUrl) {
         var a = document.createElement('a');
-        a.href = parts[i]; a.textContent = parts[i]; a.target = '_blank'; a.rel = 'noopener noreferrer';
-        a.style.color = '#3b82f6'; a.style.textDecoration = 'underline'; a.style.wordBreak = 'break-all';
+        a.href = part;                  // 원본 URL 전체
+        a.textContent = displayText;    // 잘린 표시 텍스트
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        a.style.color = '#3b82f6';
+        a.style.textDecoration = 'underline';
+        a.style.wordBreak = 'break-all';
         container.appendChild(a);
-      } else { container.appendChild(document.createTextNode(parts[i])); }
-      urlRegex.lastIndex = 0;
+      } else {
+        container.appendChild(document.createTextNode(displayText));
+      }
+
+      used += displayText.length;
+      if (truncated) break;
     }
+    if (truncated) container.appendChild(document.createTextNode('...'));
   }
 
   function getCategoryGroup(category) {

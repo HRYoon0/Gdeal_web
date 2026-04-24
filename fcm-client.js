@@ -159,6 +159,24 @@
     }
   }
 
+  // Service Worker에서 알림 클릭 시 보내는 네비게이션 메시지 수신
+  // (iOS PWA에서 sw의 client.navigate()가 불안정하여 이 방식 사용)
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.addEventListener('message', (event) => {
+      if (event.data?.type === 'GDEAL_NAVIGATE' && event.data.url) {
+        try {
+          const target = new URL(event.data.url);
+          // 동일 페이지면 새로고침 없이 포커스만 유지, 아니면 이동
+          if (window.location.href !== target.href) {
+            window.location.href = target.href;
+          }
+        } catch (e) {
+          console.error('네비게이션 메시지 처리 실패:', e);
+        }
+      }
+    });
+  }
+
   // 메인 함수
   async function main() {
     // Standalone 모드가 아니면 종료

@@ -303,6 +303,86 @@ exports.migrateAddSharingSubscription = functions.https.onRequest(async (req, re
   }
 });
 
+// 회원 삭제 (Firebase Auth + Firestore)
+// 관리자 패널에서 호출 - superAdmin 또는 operations-office만 허용
+exports.deleteUser = functions.https.onCall(async (data, context) => {
+  // 인증 확인
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', '로그인이 필요합니다.');
+  }
+
+  const callerUid = context.auth.uid;
+  const targetUid = data.uid;
+
+  if (!targetUid) {
+    throw new functions.https.HttpsError('invalid-argument', '삭제할 회원의 UID가 필요합니다.');
+  }
+
+  // 자기 자신은 삭제 불가
+  if (callerUid === targetUid) {
+    throw new functions.https.HttpsError('failed-precondition', '자기 자신은 삭제할 수 없습니다.');
+  }
+
+  // 호출자 권한 확인
+  const callerDoc = await db.collection('users').doc(callerUid).get();
+  if (!callerDoc.exists) {
+    throw new functions.https.HttpsError('permission-denied', '호출자 정보를 찾을 수 없습니다.');
+  }
+
+  const callerData = callerDoc.data();
+  const callerRole = callerData.role || '';
+  const callerTier = callerData.memberTier || '';
+
+  if (callerRole !== 'superAdmin' && callerTier !== 'operations-office') {
+    throw new functions.https.HttpsError('permission-denied', '삭제 권한이 없습니다.');
+  }
+
+  // 대상이 superAdmin이면 삭제 불가
+  const targetDoc = await db.collection('users').doc(targetUid).get();
+  if (targetDoc.exists) {
+    const targetData = targetDoc.data();
+    if (targetData.role === 'superAdmin') {
+      throw new functions.https.HttpsError('failed-precondition', '최고 관리자는 삭제할 수 없습니다.');
+    }
+  }
+
+  // 1. Firebase Auth에서 삭제
+  try {
+    await admin.auth().deleteUser(targetUid);
+  } catch (authError) {
+    // Auth에 사용자가 없는 경우 (이미 삭제됨) 무시
+    if (authError.code !== 'auth/user-not-found') {
+      throw new functions.https.HttpsError('internal', 'Auth 삭제 실패: ' + authError.message);
+    }
+  }
+
+  // 2. Firestore users 컬렉션에서 삭제
+  if (targetDoc.exists) {
+    await db.collection('users').doc(targetUid).delete();
+  }
+
+  // 3. pendingUsers 컬렉션에도 있으면 삭제
+  const pendingDoc = await db.collection('pendingUsers').doc(targetUid).get();
+  if (pendingDoc.exists) {
+    await db.collection('pendingUsers').doc(targetUid).delete();
+  }
+
+  // 4. 해당 회원의 나눔활동 신청 내역 삭제
+  const appSnapshot = await db.collection('sharingApplications')
+    .where('applicantUid', '==', targetUid)
+    .get();
+
+  if (!appSnapshot.empty) {
+    const batch = db.batch();
+    appSnapshot.forEach(doc => {
+      batch.delete(doc.ref);
+    });
+    await batch.commit();
+  }
+
+  return { success: true, message: '회원이 삭제되었습니다.' };
+});
+
 // 테스트용 HTTP 함수 (알림 수동 발송)
 exports.sendTestNotification = functions.https.onRequest(async (req, res) => {
   // CORS 설정
