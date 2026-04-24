@@ -12,6 +12,7 @@ firebase-debug.log
 
 # Node modules (필요시)
 node_modules/
+functions/node_modules/
 
 # OS 파일
 .DS_Store
@@ -21,3 +22,32 @@ Thumbs.db
 .vscode/
 .idea/
 .playwright-mcp/
+
+# === 보안: 서비스 계정 크레덴셜 (절대 커밋 금지) ===
+# Google Cloud / Firebase service account key files
+*-adminsdk-*.json
+*service-account*.json
+*serviceAccount*.json
+gdeal-drive-picker-*.json
+*-credentials.json
+google-services.json
+GoogleService-Info.plist
+
+# 환경 변수 파일
+.env
+.env.local
+.env.*.local
+functions/.env
+functions/.env.*
+
+# === 백업/임시 파일 ===
+*.backup
+*.backup[0-9]*
+*.bak
+*.bak[0-9]*
+*.orig
+*~
+
+# _next 디렉토리 내 백업 파일만 제외
+_next/**/*.backup*
+_next/**/*.bak*
