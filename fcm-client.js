@@ -44,9 +44,18 @@
     try {
       const db = firebase.firestore();
       const tokenRef = db.collection('fcm_tokens').doc(token);
+      const currentUser = firebase.auth().currentUser;
+
+      // uid 필드를 저장해야 Firestore Rules가 본인 토큰임을 검증 가능
+      // (비로그인 상태면 저장을 스킵 — 구독은 로그인 사용자에게만 의미 있음)
+      if (!currentUser) {
+        console.log('비로그인 상태 - FCM 토큰 저장 스킵');
+        return false;
+      }
 
       await tokenRef.set({
         token: token,
+        uid: currentUser.uid,
         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
         updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
         platform: deviceInfo.platform,
@@ -112,7 +121,15 @@
             userAgent: navigator.userAgent
           };
 
-          // Firestore에 토큰 저장
+          // Firebase Auth의 초기 상태 복원을 대기 (currentUser가 null일 수 있으므로)
+          await new Promise((resolve) => {
+            const unsub = firebase.auth().onAuthStateChanged(() => {
+              unsub();
+              resolve();
+            });
+          });
+
+          // Firestore에 토큰 저장 (로그인 사용자의 uid 포함)
           await saveTokenToFirestore(token, deviceInfo);
 
           // 로컬 스토리지에도 저장 (중복 요청 방지)
