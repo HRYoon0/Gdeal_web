@@ -41,11 +41,14 @@
     '.feed-counter { font-size:0.75rem; color:#9ca3af; text-align:center; margin-top:0.25rem; }',
     // ===== 모바일 전용 오버라이드 (768px 미만) =====
     '@media (max-width: 768px) {',
+    // 컨테이너: 2컬럼 → 1컬럼 (피드 위, 사이드바 아래)
     '  #sharing-cards-container { grid-template-columns: 1fr !important; gap: 0.75rem !important; }',
-    // 활동 현황 카드 내부 4스탯을 4열 한 줄로 배치하여 높이 감소
-    '  #sharing-cards-container > div:nth-child(2) > div:last-child { grid-template-columns: repeat(4, 1fr) !important; }',
-    // 다가오는 일정 카드를 살짝 컴팩트하게
-    '  #sharing-cards-container > div:nth-child(3) { padding: 0.85rem !important; }',
+    // 활동 현황 카드: 모바일은 화면 폭이 충분하니 4스탯 가로 한 줄 배치 (높이 절약)
+    '  .sharing-stats-grid { display: grid !important; grid-template-columns: repeat(4, 1fr) !important; gap: 0.5rem !important; }',
+    // 모바일에선 값-위, 라벨-아래 배치를 위해 column-reverse (DOM 순서: 라벨, 값)
+    '  .sharing-stat-item { flex-direction: column-reverse !important; align-items: center !important; text-align: center !important; padding: 0.25rem 0 !important; border-top: none !important; gap: 0.15rem !important; }',
+    // 다가오는 일정 카드: 약간 컴팩트하게
+    '  .sharing-schedule-card { padding: 0.85rem !important; }',
     // 피드 카드 내부 패딩 조정
     '  .feed-card-inner > div:last-child { padding: 0.85rem 1rem !important; }',
     '  .feed-nav-btn { width: 32px !important; height: 32px !important; opacity: 0.85 !important; }',
@@ -72,7 +75,8 @@
 
     var container = document.createElement('div');
     container.id = 'sharing-cards-container';
-    container.style.cssText = 'display:grid;grid-template-columns:55% 1fr 1fr;gap:0.75rem;min-height:200px;padding:0.5rem 0;width:100%;';
+    // 2컬럼 그리드: 좌측 피드(1.6fr) / 우측 사이드바(1fr) — 교육활동 영역과 시각적 균형
+    container.style.cssText = 'display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:0.75rem;min-height:200px;padding:0.5rem 0;width:100%;';
 
     var loadingDiv = document.createElement('div');
     loadingDiv.style.cssText = 'display:flex;flex-direction:column;align-items:center;justify-content:center;padding:3rem;color:#9ca3af;gap:0.75rem;width:100%;';
@@ -85,11 +89,9 @@
     loadingDiv.appendChild(loadText);
     container.appendChild(loadingDiv);
 
-    // col-span-1을 전체 너비로 확장
-    var colSpan = parentRelative.closest('.col-span-1') || parentRelative.parentElement;
-    if (colSpan) colSpan.style.gridColumn = '1 / -1';
-
     // 컨테이너를 col-span-1의 직접 자식으로 삽입 (relative 바깥)
+    //   → 교육활동 컬럼과 lg:grid-cols-2 좌우 배치 유지 (gridColumn 확장 제거)
+    var colSpan = parentRelative.closest('.col-span-1') || parentRelative.parentElement;
     if (colSpan && colSpan !== parentRelative) {
       colSpan.appendChild(container);
     } else {
@@ -138,26 +140,41 @@
           }
           totalApplicants += (parseInt(d.appliedCount) || 0);
 
-          // 활동중 + 날짜 안 지난 것
+          // 활동중 + 날짜 안 지난 것 (일단 모두 후보로 수집 — 정렬 후 상위 5개 추출)
           if (st === '활동중' && (!d.activityDate || d.activityDate >= today)) {
-            if (activeCards.length < 5) activeCards.push(d);
-            // 다가오는 일정 (날짜 있는 것만)
-            if (d.activityDate && upcomingList.length < 3) {
+            activeCards.push(d);
+            // 다가오는 일정 (날짜 있는 것만, 우측 사이드바 균형용)
+            if (d.activityDate && upcomingList.length < 5) {
               upcomingList.push(d);
             }
           }
         });
 
-        // 다가오는 일정을 날짜순 정렬
+        // 다가오는 일정을 날짜순 정렬 (가까운 날짜부터)
         upcomingList.sort(function(a, b) { return (a.activityDate || '').localeCompare(b.activityDate || ''); });
 
-        // 1열: 피드 슬라이더
+        // 활동 카드: activityDate 오름차순 (오늘에 가장 가까운 날짜가 1번 슬라이드)
+        //   - 활동중 + 오늘 이후 조건이 이미 적용되어 있으므로 빠른 날짜 = 가장 임박
+        //   - 날짜가 빈 카드는 마지막으로 밀려남
+        activeCards.sort(function(a, b) {
+          var da = a.activityDate || '';
+          var db = b.activityDate || '';
+          if (!da && !db) return 0;
+          if (!da) return 1;
+          if (!db) return -1;
+          return da.localeCompare(db);
+        });
+        activeCards = activeCards.slice(0, 5);
+
+        // 1열: 피드 슬라이더 (1장씩 회전)
+        //   sliderCol = flex column. slideArea(flex:1)가 늘어나 도트/카운터를 컬럼 바닥에 고정.
+        //   총 높이(card + dots + counter) = 사이드바 높이로 맞춤.
         var sliderCol = document.createElement('div');
-        sliderCol.style.cssText = 'min-width:0;overflow:hidden;';
+        sliderCol.style.cssText = 'min-width:0;overflow:hidden;display:flex;flex-direction:column;';
 
         if (activeCards.length === 0) {
           var empty = document.createElement('div');
-          empty.style.cssText = 'padding:3rem;text-align:center;color:#9ca3af;font-size:0.9rem;background:#f9fafb;border-radius:0.75rem;height:100%;display:flex;align-items:center;justify-content:center;';
+          empty.style.cssText = 'flex:1;padding:3rem;text-align:center;color:#9ca3af;font-size:0.9rem;background:#f9fafb;border-radius:0.75rem;display:flex;align-items:center;justify-content:center;';
           empty.textContent = '등록된 나눔활동이 없습니다.';
           sliderCol.appendChild(empty);
         } else if (activeCards.length === 1) {
@@ -169,12 +186,25 @@
         }
         container.appendChild(sliderCol);
 
-        // 2열: 활동 현황, 3열: 다가오는 일정
+        // 우측 사이드바: 활동 현황 + 다가오는 일정 (세로 스택)
         var oldPanel = document.getElementById('sharing-summary-panel');
         if (oldPanel) oldPanel.remove();
         var panels = buildSummaryCards(allActivities, upcomingList, categoryCount, totalApplicants);
-        container.appendChild(panels.stats);
-        container.appendChild(panels.schedule);
+        var sidebar = document.createElement('div');
+        sidebar.id = 'sharing-sidebar';
+        sidebar.style.cssText = 'display:flex;flex-direction:column;gap:0.75rem;min-width:0;';
+        sidebar.appendChild(panels.stats);
+        sidebar.appendChild(panels.schedule);
+        container.appendChild(sidebar);
+
+        // 카드 높이를 사이드바 높이에 맞춰 동적 조정 (DOM/폰트 안정 후 + 리사이즈 시)
+        setTimeout(syncFeedCardHeights, 250);
+        setTimeout(syncFeedCardHeights, 900);
+        var resizeT;
+        window.addEventListener('resize', function() {
+          clearTimeout(resizeT);
+          resizeT = setTimeout(syncFeedCardHeights, 200);
+        });
       })
       .catch(function(err) {
         console.error('나눔활동 로드 실패:', err);
@@ -195,15 +225,18 @@
     }
 
     var statsCard = document.createElement('div');
+    statsCard.className = 'sharing-stats-card';
     statsCard.style.cssText = 'background:linear-gradient(135deg,#f0faf3,#e8f5e9);border:1px solid #c8e6c9;border-radius:0.75rem;padding:1rem;animation:feedSlideUp 0.5s ease-out 0.2s forwards;opacity:0;';
 
     var statsTitle = document.createElement('div');
-    statsTitle.style.cssText = 'font-size:0.75rem;font-weight:600;color:#66ae7d;margin-bottom:0.75rem;letter-spacing:0.05em;';
+    statsTitle.style.cssText = 'font-size:0.75rem;font-weight:600;color:#66ae7d;margin-bottom:0.6rem;letter-spacing:0.05em;';
     statsTitle.textContent = '활동 현황';
     statsCard.appendChild(statsTitle);
 
     var statsGrid = document.createElement('div');
-    statsGrid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;';
+    statsGrid.className = 'sharing-stats-grid';
+    // PC: 라벨-값 세로 리스트 (좁은 사이드바에 최적화). 모바일은 미디어쿼리로 4컬럼 가로 배치.
+    statsGrid.style.cssText = 'display:flex;flex-direction:column;gap:0.1rem;';
 
     var statItems = [
       { label: '전체', value: all.length, color: '#374151' },
@@ -214,21 +247,27 @@
 
     for (var si = 0; si < statItems.length; si++) {
       var statItem = document.createElement('div');
-      statItem.style.cssText = 'text-align:center;';
-      var statValue = document.createElement('div');
-      statValue.style.cssText = 'font-size:1.25rem;font-weight:700;color:' + statItems[si].color + ';';
-      statValue.textContent = statItems[si].value;
-      statItem.appendChild(statValue);
+      statItem.className = 'sharing-stat-item';
+      // 라벨(좌) - 값(우) 양 끝 정렬, 항목 간 미세한 구분선
+      statItem.style.cssText = 'display:flex;justify-content:space-between;align-items:baseline;padding:0.4rem 0;' + (si > 0 ? 'border-top:1px solid rgba(102,174,125,0.15);' : '');
+
       var statLabel = document.createElement('div');
-      statLabel.style.cssText = 'font-size:0.65rem;color:#6b7280;';
+      statLabel.style.cssText = 'font-size:0.78rem;color:#4b5563;font-weight:500;';
       statLabel.textContent = statItems[si].label;
       statItem.appendChild(statLabel);
+
+      var statValue = document.createElement('div');
+      statValue.style.cssText = 'font-size:1.15rem;font-weight:700;color:' + statItems[si].color + ';line-height:1;';
+      statValue.textContent = statItems[si].value;
+      statItem.appendChild(statValue);
+
       statsGrid.appendChild(statItem);
     }
     statsCard.appendChild(statsGrid);
 
     // 다가오는 일정 카드
     var scheduleCard = document.createElement('div');
+    scheduleCard.className = 'sharing-schedule-card';
     scheduleCard.style.cssText = 'background:linear-gradient(135deg,#eff6ff,#dbeafe);border:1px solid #bfdbfe;border-radius:0.75rem;padding:1rem;animation:feedSlideUp 0.5s ease-out 0.35s forwards;opacity:0;';
 
     var schedTitle = document.createElement('div');
@@ -282,10 +321,10 @@
     var currentIndex = 0;
     var autoTimer = null;
 
-    // 슬라이드 영역
+    // 슬라이드 영역 — flex:1로 sliderCol의 남은 세로 공간을 채워서 도트/카운터를 바닥에 고정
     var slideArea = document.createElement('div');
     slideArea.className = 'feed-slide-container';
-    slideArea.style.cssText = 'position:relative;';
+    slideArea.style.cssText = 'position:relative;flex:1;min-height:0;';
 
     var slideElements = [];
     var maxHeight = 0;
@@ -354,9 +393,10 @@
         el.style.visibility = prevVis;
         if (!prevAct) el.classList.remove('active');
       }
+      // slideArea는 flex:1로 컬럼을 채우므로 높이를 강제 설정하지 않음.
+      // 카드 자연 높이만 추적 (필요 시 외부에서 활용 가능)
       if (newMax > 0) {
         maxHeight = newMax;
-        slideArea.style.height = newMax + 'px';
       }
     }
 
@@ -424,6 +464,48 @@
     }, { passive: true });
   }
 
+  // 슬라이더 전체 높이(card + dots + counter)가 사이드바 높이와 같도록 동기화.
+  //   - 카드가 너무 길면 description의 line-clamp를 줄여 (사이드바 - 도트 - 카운터) 안에 맞춤
+  //   - 카드가 짧으면 그대로 두고 slideArea의 flex:1이 빈 공간을 채워 도트/카운터를 바닥에 고정
+  function syncFeedCardHeights() {
+    var sidebar = document.getElementById('sharing-sidebar');
+    if (!sidebar) return;
+    var sidebarH = sidebar.offsetHeight;
+    if (sidebarH <= 0) return;
+
+    // 슬라이더 하단 요소(도트 + 카운터) 높이 측정
+    var dotsEl = document.querySelector('#sharing-cards-container .feed-dots');
+    var counterEl = document.querySelector('#sharing-cards-container .feed-counter');
+    var bottomBarH = (dotsEl ? dotsEl.offsetHeight : 0) + (counterEl ? counterEl.offsetHeight : 0);
+
+    // 카드가 차지할 수 있는 최대 높이 = 사이드바 - 하단 바
+    var cardTargetH = sidebarH - bottomBarH;
+    if (cardTargetH <= 0) return;
+
+    var cards = document.querySelectorAll('#sharing-cards-container .feed-card-inner');
+    for (var i = 0; i < cards.length; i++) {
+      var card = cards[i];
+      var desc = card.querySelector('.feed-card-desc');
+      if (!desc) continue;
+
+      // 자연 높이 측정을 위해 line-clamp 임시 해제
+      desc.style.webkitLineClamp = '99';
+      var naturalH = card.offsetHeight;
+      var lineH = parseFloat(window.getComputedStyle(desc).lineHeight) || 24;
+
+      if (naturalH > cardTargetH) {
+        var diff = naturalH - cardTargetH;
+        var linesToCut = Math.ceil(diff / lineH);
+        var currentLines = Math.ceil(desc.scrollHeight / lineH);
+        var newLines = Math.max(2, currentLines - linesToCut);
+        desc.style.webkitLineClamp = String(newLines);
+      } else {
+        // 카드가 충분히 짧으면 자연 높이 유지 (slideArea의 flex:1이 남는 공간 흡수)
+        desc.style.webkitLineClamp = '99';
+      }
+    }
+  }
+
   function createFeedCard(data) {
     var cat = getCat(data.category);
 
@@ -431,90 +513,112 @@
     card.href = '/sharing/';
     card.className = 'feed-card-inner';
 
-    // 왼쪽 컬러 사이드바
+    // 왼쪽 컬러 사이드바 (히어로 카드용 굵은 액센트)
     var sidebar = document.createElement('div');
-    sidebar.style.cssText = 'width:5px;flex-shrink:0;background:' + cat.bar + ';';
+    sidebar.style.cssText = 'width:6px;flex-shrink:0;background:' + cat.bar + ';';
     card.appendChild(sidebar);
 
-    // 메인
+    // 메인 — 패딩·간격을 키워 히어로 카드답게
     var main = document.createElement('div');
-    main.style.cssText = 'flex:1;padding:1rem 1.25rem;display:flex;flex-direction:column;gap:0.5rem;';
+    main.style.cssText = 'flex:1;padding:1.5rem 1.75rem;display:flex;flex-direction:column;gap:0.85rem;min-width:0;';
 
-    // 상단
+    // 상단 (카테고리·상태·날짜 뱃지)
     var topRow = document.createElement('div');
     topRow.style.cssText = 'display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;';
 
     var catBadge = document.createElement('span');
-    catBadge.style.cssText = 'display:inline-block;padding:0.2rem 0.6rem;border-radius:9999px;font-size:0.7rem;font-weight:600;background:' + cat.bg + ';color:' + cat.color + ';';
+    catBadge.style.cssText = 'display:inline-block;padding:0.25rem 0.7rem;border-radius:9999px;font-size:0.72rem;font-weight:600;background:' + cat.bg + ';color:' + cat.color + ';';
     catBadge.textContent = data.category || '-';
     topRow.appendChild(catBadge);
 
     var statusBadge = document.createElement('span');
-    statusBadge.style.cssText = 'display:inline-flex;align-items:center;gap:0.25rem;padding:0.15rem 0.5rem;border-radius:9999px;font-size:0.65rem;font-weight:600;background:#dcfce7;color:#166534;border:1px solid #bbf7d0;';
+    statusBadge.style.cssText = 'display:inline-flex;align-items:center;gap:0.3rem;padding:0.2rem 0.55rem;border-radius:9999px;font-size:0.68rem;font-weight:600;background:#dcfce7;color:#166534;border:1px solid #bbf7d0;';
     var dot = document.createElement('span');
-    dot.style.cssText = 'display:inline-block;width:5px;height:5px;border-radius:50%;background:#22c55e;';
+    dot.style.cssText = 'display:inline-block;width:6px;height:6px;border-radius:50%;background:#22c55e;';
     statusBadge.appendChild(dot);
     statusBadge.appendChild(document.createTextNode(' 활동중'));
     topRow.appendChild(statusBadge);
 
     if (data.activityDate) {
       var dateChip = document.createElement('span');
-      dateChip.style.cssText = 'margin-left:auto;display:inline-flex;align-items:center;gap:0.25rem;font-size:0.75rem;color:#6b7280;background:#f3f4f6;padding:0.15rem 0.5rem;border-radius:0.25rem;';
+      dateChip.style.cssText = 'margin-left:auto;display:inline-flex;align-items:center;gap:0.3rem;font-size:0.78rem;color:#374151;background:#f3f4f6;padding:0.25rem 0.6rem;border-radius:0.375rem;font-weight:600;';
       dateChip.textContent = data.activityDate + (data.activityTime ? ' ' + data.activityTime : '');
       topRow.appendChild(dateChip);
     }
     main.appendChild(topRow);
 
-    // 활동명
+    // 활동명 (히어로 타이틀)
     var title = document.createElement('div');
-    title.style.cssText = 'font-size:1.05rem;font-weight:700;color:#1f2937;letter-spacing:-0.01em;';
+    title.style.cssText = 'font-size:1.3rem;font-weight:700;color:#111827;letter-spacing:-0.015em;line-height:1.35;';
     title.textContent = data.name || '';
     main.appendChild(title);
 
-    // 활동 내용
+    // 활동 내용 — line-clamp 라인 수는 syncFeedCardHeights()가 사이드바 높이에 맞춰 동적 조정
     if (data.description) {
       var desc = document.createElement('div');
-      desc.style.cssText = 'font-size:0.8rem;color:#6b7280;line-height:1.6;white-space:pre-wrap;word-break:break-word;';
-      desc.textContent = truncate(data.description, 100);
+      desc.className = 'feed-card-desc';
+      desc.style.cssText = 'font-size:0.9rem;color:#4b5563;line-height:1.65;white-space:pre-wrap;word-break:break-word;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:6;overflow:hidden;text-overflow:ellipsis;';
+      desc.textContent = data.description;
       main.appendChild(desc);
     }
 
-    // 하단
+    // 신청 진행률 (정원이 있는 경우 시각화)
+    var cap = parseInt(data.capacity) || 0;
+    var appCount = parseInt(data.appliedCount) || 0;
+    if (cap > 0) {
+      var progressSection = document.createElement('div');
+      progressSection.style.cssText = 'display:flex;flex-direction:column;gap:0.35rem;padding:0.7rem 0.85rem;background:#f9fafb;border-radius:0.5rem;border:1px solid #f3f4f6;';
+
+      var progressTop = document.createElement('div');
+      progressTop.style.cssText = 'display:flex;justify-content:space-between;align-items:center;font-size:0.78rem;';
+
+      var progLabel = document.createElement('span');
+      progLabel.style.cssText = 'color:#6b7280;font-weight:600;';
+      progLabel.textContent = '신청 현황';
+      progressTop.appendChild(progLabel);
+
+      var progValue = document.createElement('span');
+      var isFull = appCount >= cap;
+      progValue.style.cssText = 'font-weight:700;color:' + (isFull ? '#ef4444' : '#66ae7d') + ';';
+      progValue.textContent = appCount + ' / ' + cap + (isFull ? ' (마감)' : '');
+      progressTop.appendChild(progValue);
+
+      progressSection.appendChild(progressTop);
+
+      // 진행률 바
+      var progressBar = document.createElement('div');
+      progressBar.style.cssText = 'width:100%;height:6px;background:#e5e7eb;border-radius:9999px;overflow:hidden;';
+      var progressFill = document.createElement('div');
+      var pct = Math.min(100, Math.round((appCount / cap) * 100));
+      progressFill.style.cssText = 'width:' + pct + '%;height:100%;background:' + (isFull ? '#ef4444' : 'linear-gradient(90deg,#66ae7d,#497e56)') + ';border-radius:9999px;transition:width 0.6s ease;';
+      progressBar.appendChild(progressFill);
+      progressSection.appendChild(progressBar);
+
+      main.appendChild(progressSection);
+    }
+
+    // 하단 (개설자·장소 — 더 명확한 라벨링)
     var bottomRow = document.createElement('div');
-    bottomRow.style.cssText = 'display:flex;align-items:center;gap:0.75rem;font-size:0.75rem;color:#9ca3af;margin-top:0.25rem;flex-wrap:wrap;';
+    bottomRow.style.cssText = 'display:flex;align-items:center;gap:0.85rem;font-size:0.8rem;color:#6b7280;flex-wrap:wrap;padding-top:0.5rem;border-top:1px solid #f3f4f6;';
 
     if (data.creator) {
       var creator = document.createElement('span');
-      creator.style.cssText = 'display:inline-flex;align-items:center;gap:0.3rem;';
+      creator.style.cssText = 'display:inline-flex;align-items:center;gap:0.35rem;';
       var creatorLabel = document.createElement('span');
-      creatorLabel.style.cssText = 'color:#66ae7d;font-weight:600;font-size:0.7rem;';
+      creatorLabel.style.cssText = 'color:#66ae7d;font-weight:600;font-size:0.72rem;';
       creatorLabel.textContent = '개설';
       creator.appendChild(creatorLabel);
       creator.appendChild(document.createTextNode(data.creator));
       bottomRow.appendChild(creator);
     }
-    var cap = parseInt(data.capacity) || 0;
-    var appCount = parseInt(data.appliedCount) || 0;
-    if (cap > 0) {
-      var capChip = document.createElement('span');
-      capChip.style.cssText = 'display:inline-flex;align-items:center;gap:0.3rem;';
-      var capLabel = document.createElement('span');
-      capLabel.style.cssText = 'color:#66ae7d;font-weight:600;font-size:0.7rem;';
-      capLabel.textContent = '정원';
-      capChip.appendChild(capLabel);
-      var capValue = document.createTextNode(appCount + '/' + cap);
-      if (appCount >= cap) { capChip.style.color = '#ef4444'; }
-      capChip.appendChild(capValue);
-      bottomRow.appendChild(capChip);
-    }
     if (data.location) {
       var locChip = document.createElement('span');
-      locChip.style.cssText = 'display:inline-flex;align-items:center;gap:0.3rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:180px;';
+      locChip.style.cssText = 'display:inline-flex;align-items:center;gap:0.35rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0;';
       var locLabel = document.createElement('span');
-      locLabel.style.cssText = 'color:#66ae7d;font-weight:600;font-size:0.7rem;flex-shrink:0;';
+      locLabel.style.cssText = 'color:#66ae7d;font-weight:600;font-size:0.72rem;flex-shrink:0;';
       locLabel.textContent = '장소';
       locChip.appendChild(locLabel);
-      locChip.appendChild(document.createTextNode(truncate(data.location, 20)));
+      locChip.appendChild(document.createTextNode(truncate(data.location, 30)));
       bottomRow.appendChild(locChip);
     }
     main.appendChild(bottomRow);
