@@ -393,10 +393,11 @@
         el.style.visibility = prevVis;
         if (!prevAct) el.classList.remove('active');
       }
-      // slideArea는 flex:1로 컬럼을 채우므로 높이를 강제 설정하지 않음.
-      // 카드 자연 높이만 추적 (필요 시 외부에서 활용 가능)
+      // minHeight로 카드 자연 높이를 보장. PC에선 flex:1이 그 이상으로 늘어나며,
+      // 모바일(부모 row stretch 없음)에선 정확히 maxCard 높이가 적용되어 카드 콘텐츠가 보임.
       if (newMax > 0) {
         maxHeight = newMax;
+        slideArea.style.minHeight = newMax + 'px';
       }
     }
 
@@ -464,31 +465,60 @@
     }, { passive: true });
   }
 
-  // 슬라이더 전체 높이(card + dots + counter)가 사이드바 높이와 같도록 동기화.
-  //   - 카드가 너무 길면 description의 line-clamp를 줄여 (사이드바 - 도트 - 카운터) 안에 맞춤
-  //   - 카드가 짧으면 그대로 두고 slideArea의 flex:1이 빈 공간을 채워 도트/카운터를 바닥에 고정
+  // 슬라이더 높이 + description 클램프를 환경(모바일/PC)에 맞게 동기화.
+  //   - PC(>=768px): 카드+도트+카운터 = 사이드바 높이가 되도록 description 클램프 적용
+  //   - 모바일(<768px): description 풀 표시, slideArea minHeight를 카드 자연 높이로 갱신
   function syncFeedCardHeights() {
+    var slideArea = document.querySelector('#sharing-cards-container .feed-slide-container');
+    var cards = document.querySelectorAll('#sharing-cards-container .feed-card-inner');
+    if (!slideArea || cards.length === 0) return;
+
+    var isMobile = window.innerWidth < 768;
+
+    if (isMobile) {
+      // 모바일: description을 기본 6줄 클램프로 통일 (PC에서 변경된 값 리셋).
+      //   사이드바와 매칭할 필요 없으므로 정적 클램프가 가독성/일관성에 적합.
+      for (var mi = 0; mi < cards.length; mi++) {
+        var mDesc = cards[mi].querySelector('.feed-card-desc');
+        if (mDesc) mDesc.style.webkitLineClamp = '6';
+      }
+      // 모든 슬라이드를 임시 활성화하여 클램프 적용된 max 카드 높이 측정 → slideArea 갱신
+      var slides = document.querySelectorAll('#sharing-cards-container .feed-card-slide');
+      var maxH = 0;
+      for (var si = 0; si < slides.length; si++) {
+        var s = slides[si];
+        var prevPos = s.style.position, prevVis = s.style.visibility;
+        var prevAct = s.classList.contains('active');
+        s.style.position = 'relative';
+        s.style.visibility = 'hidden';
+        if (!prevAct) s.classList.add('active');
+        var sh = s.offsetHeight;
+        if (sh > maxH) maxH = sh;
+        s.style.position = prevPos;
+        s.style.visibility = prevVis;
+        if (!prevAct) s.classList.remove('active');
+      }
+      if (maxH > 0) slideArea.style.minHeight = maxH + 'px';
+      return;
+    }
+
+    // PC: 사이드바 높이에 맞춰 카드 높이 매칭
     var sidebar = document.getElementById('sharing-sidebar');
     if (!sidebar) return;
     var sidebarH = sidebar.offsetHeight;
     if (sidebarH <= 0) return;
 
-    // 슬라이더 하단 요소(도트 + 카운터) 높이 측정
     var dotsEl = document.querySelector('#sharing-cards-container .feed-dots');
     var counterEl = document.querySelector('#sharing-cards-container .feed-counter');
     var bottomBarH = (dotsEl ? dotsEl.offsetHeight : 0) + (counterEl ? counterEl.offsetHeight : 0);
-
-    // 카드가 차지할 수 있는 최대 높이 = 사이드바 - 하단 바
     var cardTargetH = sidebarH - bottomBarH;
     if (cardTargetH <= 0) return;
 
-    var cards = document.querySelectorAll('#sharing-cards-container .feed-card-inner');
     for (var i = 0; i < cards.length; i++) {
       var card = cards[i];
       var desc = card.querySelector('.feed-card-desc');
       if (!desc) continue;
 
-      // 자연 높이 측정을 위해 line-clamp 임시 해제
       desc.style.webkitLineClamp = '99';
       var naturalH = card.offsetHeight;
       var lineH = parseFloat(window.getComputedStyle(desc).lineHeight) || 24;
@@ -500,7 +530,6 @@
         var newLines = Math.max(2, currentLines - linesToCut);
         desc.style.webkitLineClamp = String(newLines);
       } else {
-        // 카드가 충분히 짧으면 자연 높이 유지 (slideArea의 flex:1이 남는 공간 흡수)
         desc.style.webkitLineClamp = '99';
       }
     }

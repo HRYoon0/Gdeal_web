@@ -194,6 +194,24 @@
     });
   }
 
+  // 페이지 로드마다 SW 업데이트 체크 강제 (PWA의 끈적한 캐시 갱신용)
+  //   - 새 SW 버전이 배포돼 있으면 즉시 install → skipWaiting + clients.claim으로 활성화
+  //   - 새 SW가 controller가 되면 자동으로 페이지 reload하여 신선한 JS 적용
+  if ('serviceWorker' in navigator) {
+    var pageLoadTime = Date.now();
+    var isReloading = false;
+    navigator.serviceWorker.addEventListener('controllerchange', function() {
+      // 페이지 로드 직후의 첫 controller 할당은 무시 (무한 루프 방지)
+      if (isReloading) return;
+      if (Date.now() - pageLoadTime < 1500) return;
+      isReloading = true;
+      window.location.reload();
+    });
+    navigator.serviceWorker.getRegistration().then(function(reg) {
+      if (reg) reg.update().catch(function() {});
+    }).catch(function() {});
+  }
+
   // 메인 함수
   async function main() {
     // Standalone 모드가 아니면 종료

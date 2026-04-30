@@ -1105,6 +1105,21 @@
       filtered.push(a);
     }
 
+    // 일시 오름차순 정렬 (가까운 날짜가 위)
+    //   - 같은 날짜면 시간 오름차순
+    //   - 날짜 없는 활동은 맨 아래로
+    filtered.sort(function(a, b) {
+      var da = a.activityDate || '';
+      var db = b.activityDate || '';
+      if (!da && !db) return 0;
+      if (!da) return 1;
+      if (!db) return -1;
+      if (da === db) {
+        return (a.activityTime || '').localeCompare(b.activityTime || '');
+      }
+      return da.localeCompare(db);
+    });
+
     return filtered;
   }
 
