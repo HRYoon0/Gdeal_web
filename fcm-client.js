@@ -194,6 +194,51 @@
     });
   }
 
+  // 콜드 스타트 폴백: 알림 클릭으로 PWA가 재실행됐을 때 SW의 postMessage가 유실되는 케이스 대응.
+  //   SW가 notificationclick 시 IndexedDB('gdeal-nav'/queue/'pending')에 목적지 URL을 적어두고,
+  //   페이지가 init될 때 이를 한 번 읽어서 소비(=삭제)하며 해당 URL로 이동.
+  //   60초 이상 지난 항목은 무효 처리 (오래된 큐로 잘못 점프하지 않도록).
+  function consumePendingNav() {
+    if (!('indexedDB' in window)) return;
+    var req = indexedDB.open('gdeal-nav', 1);
+    req.onupgradeneeded = function() {
+      if (!req.result.objectStoreNames.contains('queue')) {
+        req.result.createObjectStore('queue');
+      }
+    };
+    req.onsuccess = function() {
+      var db = req.result;
+      var tx = db.transaction('queue', 'readwrite');
+      var store = tx.objectStore('queue');
+      var getReq = store.get('pending');
+      getReq.onsuccess = function() {
+        var data = getReq.result;
+        store.delete('pending');
+        tx.oncomplete = function() {
+          db.close();
+          if (!data || !data.url) return;
+          if (Date.now() - (data.ts || 0) > 60000) return;
+          try {
+            var target = new URL(data.url);
+            if (window.location.href !== target.href) {
+              window.location.href = target.href;
+            }
+          } catch (e) {
+            console.error('pendingNav 네비게이션 실패:', e);
+          }
+        };
+      };
+      getReq.onerror = function() { db.close(); };
+    };
+    req.onerror = function() {};
+  }
+  // 페이지 로드 직후 한 번만 시도
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', consumePendingNav, { once: true });
+  } else {
+    consumePendingNav();
+  }
+
   // 페이지 로드마다 SW 업데이트 체크 강제 (PWA의 끈적한 캐시 갱신용)
   //   - 새 SW 버전이 배포돼 있으면 즉시 install → skipWaiting + clients.claim으로 활성화
   //   - 새 SW가 controller가 되면 자동으로 페이지 reload하여 신선한 JS 적용

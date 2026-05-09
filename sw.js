@@ -1,5 +1,37 @@
 // G-DEAL PWA Service Worker
-const CACHE_NAME = 'gdeal-v33';
+const CACHE_NAME = 'gdeal-v35';
+
+// 알림 → 페이지 네비게이션 전달용 IndexedDB 큐
+//   iOS PWA가 백그라운드에서 종료된 상태로 알림이 오면, 페이지가 콜드 스타트 되는 동안
+//   SW의 postMessage가 메시지 리스너 등록 전에 사라져 직전 탭이 그대로 보이는 문제가 있음.
+//   영속 저장소에 목적지를 기록해 두고 페이지 init 시 읽어 네비게이션하면 콜드 스타트도 안전.
+function openNavQueue() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open('gdeal-nav', 1);
+    req.onupgradeneeded = () => {
+      if (!req.result.objectStoreNames.contains('queue')) {
+        req.result.createObjectStore('queue');
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function setPendingNav(url) {
+  try {
+    const db = await openNavQueue();
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction('queue', 'readwrite');
+      tx.objectStore('queue').put({ url: url, ts: Date.now() }, 'pending');
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+    db.close();
+  } catch (e) {
+    console.warn('pendingNav 기록 실패:', e);
+  }
+}
 
 // Firebase Cloud Messaging
 importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js');
@@ -50,6 +82,10 @@ self.addEventListener('notificationclick', (event) => {
 
   event.waitUntil((async () => {
     try {
+      // 핫패스 실패 대비: 콜드 스타트로 페이지가 새로 뜨더라도 init 시 읽어 갈 수 있게
+      // IndexedDB에 목적지 URL을 먼저 기록 (postMessage 유실에 대한 안전망)
+      await setPendingNav(absoluteUrl);
+
       const windowClients = await clients.matchAll({ type: 'window', includeUncontrolled: true });
 
       // 1) 이미 목표 URL의 창이 열려 있으면 포커스만
@@ -61,6 +97,7 @@ self.addEventListener('notificationclick', (event) => {
 
       // 2) 같은 origin의 창이 있으면 포커스 후 postMessage로 네비게이션 지시
       //    (client.navigate()는 iOS PWA에서 불안정하므로 postMessage 방식 사용)
+      //    살아있는 페이지엔 즉시 반영, 콜드 스타트는 IDB 폴백으로 처리됨.
       for (const client of windowClients) {
         if (client.url.startsWith(self.location.origin)) {
           client.postMessage({ type: 'GDEAL_NAVIGATE', url: absoluteUrl });
