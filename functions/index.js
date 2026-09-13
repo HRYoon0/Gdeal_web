@@ -1,6 +1,6 @@
 /**
  * G-DEAL Cloud Functions
- * 자료 등록 시 FCM 푸시 알림 발송
+ * 자료 등록 시 FCM 푸시 알림 발송 + 성장패스 개인 알림(참여 인증 시작·기록 승인·실천 기록 권유)
  * (나눔회원 활동 관리는 Google Apps Script로 이관됨)
  */
 
@@ -249,6 +249,117 @@ exports.onSharingActivityCreated = functions.firestore
       activityId: context.params.activityId,
       url: config.url
     });
+  });
+
+// ===== 성장패스 알림: 전체 구독자가 아니라 해당 회원에게만 보낸다 =====
+
+const ATTEND_TYPES = ['webinar_attend', 'sharing_attend'];
+
+// 회원 uid 목록 → 알림을 켠 기기 토큰 (성장패스 알림을 끈 기기 제외, 항목이 없던 옛 토큰은 켜진 것으로 본다)
+async function getUserTokens(uids) {
+  const list = [...new Set((uids || []).filter(Boolean))];
+  const tokens = [];
+  for (let i = 0; i < list.length; i += 10) {
+    const snap = await db.collection('fcm_tokens').where('uid', 'in', list.slice(i, i + 10)).get();
+    snap.forEach(doc => {
+      const d = doc.data();
+      if (d.token && d.isActive !== false && !(d.subscriptions && d.subscriptions.growth === false)) tokens.push(d.token);
+    });
+  }
+  return tokens;
+}
+
+function seoulToday() {
+  return new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' }); // YYYY-MM-DD
+}
+
+// 나눔활동 참여 인증이 열리면(처음 발급 또는 다시 열기) 그 활동 신청자에게 알림 — 활동 당일만
+exports.onCheckinOpened = functions.firestore
+  .document('webinarSecrets/{targetId}')
+  .onWrite(async (change, context) => {
+    const before = change.before.exists ? change.before.data() : null;
+    const after = change.after.exists ? change.after.data() : null;
+    if (!after || after.open !== true || (before && before.open === true)) return;
+
+    const id = context.params.targetId;
+    const act = await db.collection('sharingActivities').doc(id).get();
+    if (!act.exists) return; // 운영진 등록 웨비나는 신청자 명단이 없다
+    const a = act.data();
+    if (a.activityDate && a.activityDate !== seoulToday()) {
+      console.log(`참여 인증 알림 건너뜀: 활동일 ${a.activityDate} (오늘 아님)`);
+      return;
+    }
+
+    const apps = await db.collection('sharingApplications').where('activityId', '==', id).get();
+    const uids = apps.docs.map(d => d.data().applicantUid).filter(u => u && u !== a.creatorUid);
+    const tokens = await getUserTokens(uids);
+    console.log(`참여 인증 시작 알림: 신청자 ${uids.length}명, 기기 ${tokens.length}대`);
+
+    const url = '/growth/?w=' + encodeURIComponent(id);
+    await sendPushNotification(tokens, {
+      title: '지금 참여 인증을 받고 있어요',
+      body: `[${a.category || '나눔활동'}] ${a.name || ''} — 안내된 QR이나 코드로 인증하면 참여 스탬프가 찍혀요.`,
+      icon: '/icon-192.png',
+      tag: 'growth-checkin-' + id,
+      url: url
+    }, { type: 'growth', targetId: id, url: url });
+  });
+
+// 운영진이 발표·소모임 프로젝트 기록을 승인/반려하면 기록한 회원에게 알림
+exports.onActivityLogReviewed = functions.firestore
+  .document('activityLog/{logId}')
+  .onUpdate(async (change) => {
+    const b = change.before.data();
+    const a = change.after.data();
+    if (b.status !== 'pending' || a.status === 'pending') return;
+
+    const ok = a.status !== 'rejected';
+    const tokens = await getUserTokens([a.uid]);
+    console.log(`기록 ${ok ? '승인' : '반려'} 알림: 기기 ${tokens.length}대`);
+    await sendPushNotification(tokens, {
+      title: ok ? '성장패스 기록이 승인됐어요' : '성장패스 기록이 반려됐어요',
+      body: (a.targetTitle || '기록') + (ok ? ' — 스탬프와 배지에 반영됐어요.' : ' — ' + (a.adminNote || '운영진 메모를 확인해주세요.')),
+      icon: '/icon-192.png',
+      tag: 'growth-review-' + change.after.id,
+      url: '/growth/'
+    }, { type: 'growth', url: '/growth/' });
+  });
+
+// 매일 18시: 사흘 전 참여 인증을 하고 아직 실천 기록이 없는 회원에게 실천 기록 권유
+exports.practiceReminder = functions.pubsub
+  .schedule('0 18 * * *')
+  .timeZone('Asia/Seoul')
+  .onRun(async () => {
+    const day = 86400000;
+    const now = Date.now();
+    // 단일 필드 범위 조회만 쓰고 유형은 코드에서 거른다(복합 색인 불필요)
+    const snap = await db.collection('activityLog')
+      .where('occurredAt', '>=', new Date(now - 4 * day))
+      .where('occurredAt', '<', new Date(now - 3 * day))
+      .get();
+    const byUid = {};
+    snap.docs.map(d => d.data())
+      .filter(d => ATTEND_TYPES.includes(d.type) && d.status !== 'rejected' && d.uid && d.targetId)
+      .forEach(d => { (byUid[d.uid] = byUid[d.uid] || []).push(d); });
+
+    let sent = 0;
+    for (const uid of Object.keys(byUid)) {
+      const practice = await db.collection('activityLog').where('uid', '==', uid).where('type', '==', 'practice').get();
+      const done = new Set(practice.docs.map(d => d.data().targetId));
+      const todo = byUid[uid].filter(a => !done.has(a.targetId));
+      if (!todo.length) continue;
+      const tokens = await getUserTokens([uid]);
+      if (!tokens.length) continue;
+      await sendPushNotification(tokens, {
+        title: '배운 내용을 적용해 보셨나요?',
+        body: `「${todo[0].targetTitle || '나눔활동'}」 참여 사흘째예요. 수업에 써 본 결과를 실천 기록으로 남겨 보세요.`,
+        icon: '/icon-192.png',
+        tag: 'growth-practice',
+        url: '/growth/'
+      }, { type: 'growth', url: '/growth/' });
+      sent++;
+    }
+    console.log(`실천 기록 권유: 대상 회원 ${Object.keys(byUid).length}명, 발송 ${sent}명`);
   });
 
 // 일회성 마이그레이션: 기존 FCM 토큰에 sharing 구독 추가

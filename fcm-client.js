@@ -4,32 +4,42 @@
 (function() {
   'use strict';
 
-  // Firebase SDK 로드
-  function loadFirebaseSDK() {
-    return new Promise((resolve, reject) => {
-      if (window.firebase) {
-        resolve();
-        return;
-      }
+  // compat SDK 공용 로더 (홈 나눔활동 피드·성장패스 카드도 이것을 쓴다)
+  //   여러 주입 스크립트가 app-compat을 동시에 불러 서로의 firebase 전역을 덮어쓰지 않도록
+  //   한 줄로 세워 불러온다. 이미 있는 모듈은 건너뛰고, 먼저 올라온 app과 같은 버전을 쓴다.
+  if (!window.gdealLoadFirebase) {
+    var fbQueue = Promise.resolve();
+    var addScript = function(src) {
+      return new Promise(function(resolve, reject) {
+        var el = document.createElement('script');
+        el.src = src;
+        el.onload = resolve;
+        el.onerror = function() { reject(new Error('스크립트 로드 실패: ' + src)); };
+        document.head.appendChild(el);
+      });
+    };
+    window.gdealLoadFirebase = function(parts) {
+      var job = fbQueue.then(function() {
+        var chain = window.firebase ? Promise.resolve() : addScript('https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js');
+        (parts || []).forEach(function(p) {
+          chain = chain.then(function() {
+            if (typeof firebase[p] === 'function') return;
+            return addScript('https://www.gstatic.com/firebasejs/' + firebase.SDK_VERSION + '/firebase-' + p + '-compat.js');
+          });
+        });
+        return chain;
+      });
+      fbQueue = job.catch(function() {});
+      return job;
+    };
+  }
 
-      const appScript = document.createElement('script');
-      appScript.src = 'https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js';
-      appScript.onload = () => {
-        const messagingScript = document.createElement('script');
-        messagingScript.src = 'https://www.gstatic.com/firebasejs/9.0.0/firebase-messaging-compat.js';
-        messagingScript.onload = () => {
-          const firestoreScript = document.createElement('script');
-          firestoreScript.src = 'https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore-compat.js';
-          firestoreScript.onload = resolve;
-          firestoreScript.onerror = reject;
-          document.head.appendChild(firestoreScript);
-        };
-        messagingScript.onerror = reject;
-        document.head.appendChild(messagingScript);
-      };
-      appScript.onerror = reject;
-      document.head.appendChild(appScript);
-    });
+  // 알림 구독 기본값 (growth = 성장패스: 참여 인증 시작·기록 승인·실천 기록 권유)
+  var DEFAULT_SUBS = { events: true, training: true, resources: true, diary: true, sharing: true, growth: true };
+
+  // Firebase SDK 로드 — auth가 있어야 토큰에 uid를 붙여 저장할 수 있다(규칙이 uid를 요구)
+  function loadFirebaseSDK() {
+    return window.gdealLoadFirebase(['auth', 'firestore', 'messaging']);
   }
 
   // Standalone 모드 확인 (홈 화면에 추가된 경우)
@@ -53,23 +63,20 @@
         return false;
       }
 
-      await tokenRef.set({
+      // 페이지를 열 때마다 저장하므로, 회원이 성장패스 알림 설정에서 끈 항목은 유지하고 없는 항목만 기본값으로 채운다
+      const snap = await tokenRef.get();
+      const old = snap.exists && snap.data().uid === currentUser.uid ? (snap.data().subscriptions || {}) : {};
+      const data = {
         token: token,
         uid: currentUser.uid,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
         updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
         platform: deviceInfo.platform,
         userAgent: deviceInfo.userAgent,
         isActive: true,
-        // 알림 구독 설정 (기본값: 모든 알림 받기)
-        subscriptions: {
-          events: true,      // 대외행사
-          training: true,    // 월별연수
-          resources: true,   // 자료공유
-          diary: true,       // 교단일기
-          sharing: true      // 나눔활동
-        }
-      }, { merge: true });
+        subscriptions: Object.assign({}, DEFAULT_SUBS, old)
+      };
+      if (!snap.exists) data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+      await tokenRef.set(data, { merge: true });
 
       console.log('FCM 토큰이 Firestore에 저장되었습니다.');
       return true;

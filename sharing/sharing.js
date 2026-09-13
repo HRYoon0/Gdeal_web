@@ -135,8 +135,13 @@
           role: role,
           memberTier: memberTier,
           status: data.status || '활동중',
-          tierChangedAt: tierChangedAt
+          tierChangedAt: tierChangedAt,
+          featuredBadge: data.featuredBadge && data.featuredBadge.name ? data.featuredBadge : null
         };
+        try {
+          if (userProfile.featuredBadge) localStorage.setItem('gdeal:featuredBadge:' + uid, JSON.stringify(userProfile.featuredBadge));
+          else localStorage.removeItem('gdeal:featuredBadge:' + uid);
+        } catch (e) {}
         if (data.status && data.status !== 'approved') {
           userProfile.memberTier = '';
         }
@@ -179,6 +184,30 @@
     return '일반회원';
   }
 
+  // 대표 배지 칩 (성장패스에서 고른 배지). 이 페이지는 growth.css를 안 싣으므로 인라인 스타일.
+  function createFeaturedBadge(fb, isDesktop) {
+    var chip = document.createElement('span');
+    chip.title = '대표 배지 · ' + fb.name;
+    chip.style.cssText = 'display:inline-flex;align-items:center;gap:.3rem;vertical-align:middle;margin-right:.4rem;border-radius:999px;background:#f0f9f3;border:1px solid #bbdfc6;color:#14532d;font-size:.75rem;font-weight:700;white-space:nowrap;padding:' + (isDesktop ? '.1rem .55rem .1rem .1rem' : '.1rem');
+    var medal = document.createElement('span');
+    medal.style.cssText = 'width:1.35rem;height:1.35rem;border-radius:50%;background:#66ae7d;color:#fff;display:inline-flex;align-items:center;justify-content:center;overflow:hidden;font-size:.68rem;flex-shrink:0';
+    var img = /^https:\/\/[^\s]+$/i.test(String(fb.image || '')) ? fb.image : '';
+    if (img) {
+      var im = document.createElement('img');
+      im.src = img; im.alt = ''; im.style.cssText = 'width:100%;height:100%;object-fit:cover';
+      medal.appendChild(im);
+    } else {
+      medal.textContent = String(fb.name).replace(/[^가-힣A-Za-z0-9]/g, '').charAt(0) || '★';
+    }
+    chip.appendChild(medal);
+    if (isDesktop) {
+      var nm = document.createElement('span');
+      nm.textContent = fb.name;
+      chip.appendChild(nm);
+    }
+    return chip;
+  }
+
   // SVG 아이콘 생성
   function createSvgIcon(size, pathD, strokeW) {
     var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -194,6 +223,29 @@
     svg.appendChild(path);
     return svg;
   }
+
+  // 히어로 우측 보조 버튼(강의 후기 보기/관리). 초록 배너 위 반투명 화이트 스타일.
+  //   외부 브라우저 확장의 전역 button 리셋(background/padding 제거)에도 견고하도록
+  //   핵심 시각 속성은 inline style로 지정한다(inline은 확장 규칙보다 명시도가 높음).
+  function createReviewButton(label, url) {
+    var btn = document.createElement('button');
+    btn.className = 'rounded-lg font-medium transition-colors';
+    btn.style.display = 'flex';
+    btn.style.alignItems = 'center';
+    btn.style.padding = '0.75rem 1.25rem';
+    btn.style.backgroundColor = 'rgba(255,255,255,0.15)';
+    btn.style.color = '#ffffff';
+    btn.style.border = '1px solid rgba(255,255,255,0.5)';
+    btn.style.whiteSpace = 'nowrap';
+    btn.textContent = label;
+    btn.addEventListener('mouseenter', function() { btn.style.backgroundColor = 'rgba(255,255,255,0.28)'; });
+    btn.addEventListener('mouseleave', function() { btn.style.backgroundColor = 'rgba(255,255,255,0.15)'; });
+    btn.addEventListener('click', function() { window.open(url, '_blank', 'noopener'); });
+    return btn;
+  }
+
+  // 강의 후기 웹앱(Apps Script) URL. ?admin=1 은 관리 화면.
+  var REVIEW_URL = 'https://script.google.com/macros/s/AKfycbw-jq3WQh22hfX3gWvkEyR0IZdIwz3E4DVlr2sRQMgeM8XZrFOrcMEK-8ViOekXjnY2/exec';
 
   var ICON_LOGOUT = 'M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1';
   var ICON_LOGIN = 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z';
@@ -243,6 +295,8 @@
       var profileBtn = document.createElement('button');
       profileBtn.className = isDesktop ? 'text-sm text-gray-600 hover:text-[#66ae7d] transition-colors font-medium' : 'text-xs text-gray-600 hover:text-[#66ae7d] transition-colors font-medium px-1';
       profileBtn.title = '개인정보 수정';
+      var fb = userProfile && userProfile.featuredBadge;
+      if (fb && fb.name) profileBtn.appendChild(createFeaturedBadge(fb, isDesktop));
       if (badgeClass && badgeText) {
         var badge = document.createElement('span');
         badge.className = (isDesktop ? 'inline-block px-2 py-0.5 rounded-full text-xs font-medium mr-2 ' : 'inline-block px-1.5 py-0.5 rounded-full text-xs font-medium mr-1 ') + badgeClass;
@@ -269,8 +323,25 @@
           userProfile.memberTier === 'sharing-member'
         );
         if (canCreate) {
+          // 히어로 우측 버튼 영역을 가로 정렬: [강의 후기 보기] [강의 후기 관리(관리자)] [활동 개설]
+          createBtnArea.className = 'absolute bottom-4 right-4 flex items-center space-x-3';
+
+          // 강의 후기 보기 — 활동 개설 권한자 전체에게 노출
+          createBtnArea.appendChild(createReviewButton('강의 후기 보기', REVIEW_URL));
+
+          // 강의 후기 관리 — 최고관리자·운영사무국만 노출 (?admin=1)
+          var canManageReviews = userProfile && (
+            userProfile.role === 'superAdmin' ||
+            userProfile.memberTier === 'operations-office'
+          );
+          if (canManageReviews) {
+            createBtnArea.appendChild(createReviewButton('강의 후기 관리', REVIEW_URL + '?admin=1'));
+          }
+
           var createBtn = document.createElement('button');
           createBtn.className = 'bg-white text-[#66ae7d] px-6 py-3 rounded-lg font-medium hover:bg-gray-100 transition-colors flex items-center space-x-2';
+          // 확장 프로그램의 전역 button 리셋에도 흰 배경 유지
+          createBtn.style.backgroundColor = '#ffffff';
           createBtn.addEventListener('click', function() { openCreateModal(); });
           var plusSpan = document.createElement('span');
           plusSpan.className = 'text-lg';
@@ -512,6 +583,186 @@
       });
   }
 
+  // ========== 성장패스 참여 인증 (모든 영역 — 개설자·관리자가 QR·코드 관리) ==========
+
+  function isAdminProfile() {
+    return !!(userProfile && (userProfile.role === 'superAdmin' || userProfile.memberTier === 'operations-office'));
+  }
+
+  function randomCode() {
+    var a = new Uint32Array(6), s = '';
+    crypto.getRandomValues(a);
+    for (var i = 0; i < a.length; i++) s += String(a[i] % 10);
+    return s;
+  }
+
+  // 확장 프로그램의 전역 button 리셋에도 모양이 유지되도록 인라인 스타일
+  function makeSmallBtn(label, bg, color, border) {
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = label;
+    b.style.cssText = 'display:inline-flex;align-items:center;justify-content:center;padding:.4rem .8rem;border-radius:.5rem;' +
+      'font-size:.82rem;font-weight:600;cursor:pointer;white-space:nowrap;background-color:' + bg + ';color:' + color + ';border:1px solid ' + (border || bg);
+    return b;
+  }
+
+  function buildCheckinArea(a) {
+    var area = document.createElement('div');
+    area.style.cssText = 'margin-top:1rem;border-top:2px solid #66ae7d;padding-top:1rem';
+    var title = document.createElement('div');
+    title.style.cssText = 'font-weight:700;font-size:.95rem;margin-bottom:.4rem;color:#1f2937';
+    title.textContent = '성장패스 참여 인증';
+    area.appendChild(title);
+    var help = document.createElement('div');
+    help.style.cssText = 'font-size:.85rem;color:#4b5563;line-height:1.5';
+    var canManage = !!currentUser && (a.creatorUid === currentUser.uid || isAdminProfile());
+    if (!canManage) {
+      help.textContent = '활동 당일 개설자가 안내하는 QR이나 6자리 코드로 성장패스에서 참여를 인증하면 참여 스탬프가 찍혀요. 신청만 해도 참여 스탬프 1개가 찍히고, 인증까지 하면 같은 활동은 1개로 셉니다.';
+      area.appendChild(help);
+      var link = document.createElement('a');
+      link.href = '/growth/';
+      link.textContent = '성장패스로 가기';
+      link.style.cssText = 'display:inline-block;margin-top:.4rem;color:#497e56;font-weight:600;font-size:.85rem';
+      area.appendChild(link);
+      return area;
+    }
+    help.textContent = '웨비나 화면이나 연수 현장에 QR을 띄우거나 코드를 불러 주세요. 활동 당일에 인증을 열면 신청자에게 인증 시작 알림이 가요(알림을 켠 회원만).';
+    area.appendChild(help);
+    var box = document.createElement('div');
+    box.style.marginTop = '.6rem';
+    var showBtn = makeSmallBtn('인증 QR·코드 보기', '#66ae7d', '#ffffff');
+    showBtn.addEventListener('click', function() { renderCheckinPanel(a, box); });
+    box.appendChild(showBtn);
+    area.appendChild(box);
+    return area;
+  }
+
+  // 이 활동의 회원 성찰·실천: 성장패스에서 전체 공개로 남긴 기록(규칙상 로그인 회원만 조회)
+  function buildReflectionArea(logsJob) {
+    var area = document.createElement('div');
+    area.style.cssText = 'margin-top:1rem;border-top:2px solid #66ae7d;padding-top:1rem';
+    var title = document.createElement('div');
+    title.style.cssText = 'font-weight:700;font-size:.95rem;margin-bottom:.4rem;color:#1f2937';
+    title.textContent = '이 활동의 회원 성찰·실천';
+    area.appendChild(title);
+    var box = document.createElement('div');
+    box.style.cssText = 'font-size:.85rem;color:#4b5563;line-height:1.5';
+    area.appendChild(box);
+    if (!logsJob) {
+      box.textContent = '로그인하면 이 활동에 참여한 회원들이 전체 공개로 남긴 성찰을 볼 수 있어요.';
+      return area;
+    }
+    box.textContent = '불러오는 중...';
+    logsJob.then(function(list) {
+      if (!list.length) {
+        box.textContent = '아직 전체 공개로 남긴 성찰이 없어요. 참여했다면 성장패스에서 3분 성찰을 남겨 보세요.';
+        return;
+      }
+      // ponytail: 최근 20건만. 한 활동에 공개 성찰이 20건을 넘기 시작하면 더 보기 버튼 추가
+      box.innerHTML = '<ul class="g-list">' + list.slice(0, 20).map(function(e) { return G.entryHtml(e, { showUser: true }); }).join('') + '</ul>';
+    }).catch(function(e) {
+      console.warn('활동 성찰 조회 실패:', e);
+      box.textContent = '성찰 기록을 불러오지 못했습니다.';
+    });
+    return area;
+  }
+
+  // 코드가 없으면 처음 열 때 발급한다(규칙: 관리자 또는 이 활동의 개설자만 읽기·쓰기)
+  function renderCheckinPanel(a, box) {
+    while (box.firstChild) box.removeChild(box.firstChild);
+    box.textContent = '불러오는 중...';
+    var ref = db.collection('webinarSecrets').doc(a.id);
+    var FV = firebase.firestore.FieldValue;
+    ref.get().then(function(snap) {
+      if (snap.exists) return snap.data();
+      var sec = { code: randomCode(), open: true, activityId: a.id, updatedAt: FV.serverTimestamp() };
+      return ref.set(sec).then(function() { return sec; });
+    }).then(function(sec) {
+      box.textContent = '';
+      var url = location.origin + '/growth/?w=' + encodeURIComponent(a.id) + '&c=' + encodeURIComponent(sec.code);
+      var wrap = document.createElement('div');
+      wrap.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:.45rem;padding:.9rem;border:1px solid #e5e7eb;border-radius:.75rem;background:#fff';
+      try {
+        var qr = qrcode(0, 'M');
+        qr.addData(url);
+        qr.make();
+        var img = document.createElement('img');
+        img.src = qr.createDataURL(6, 12);
+        img.alt = '참여 인증 QR 코드';
+        img.style.cssText = 'width:200px;height:200px;image-rendering:pixelated';
+        wrap.appendChild(img);
+      } catch (e) {
+        var qe = document.createElement('div');
+        qe.textContent = 'QR을 만들지 못했어요. 코드나 링크로 안내해주세요.';
+        qe.style.cssText = 'color:#b91c1c;font-size:.85rem';
+        wrap.appendChild(qe);
+      }
+      var code = document.createElement('div');
+      code.textContent = sec.code;
+      code.style.cssText = 'font-family:ui-monospace,Menlo,Consolas,monospace;font-size:1.5rem;letter-spacing:.3rem;font-weight:700;color:#111827';
+      wrap.appendChild(code);
+      var badge = document.createElement('span');
+      badge.textContent = sec.open ? '인증 받는 중' : '인증 마감';
+      badge.style.cssText = 'font-size:.78rem;font-weight:600;padding:.15rem .5rem;border-radius:.35rem;' + (sec.open ? 'background:#dcfce7;color:#166534' : 'background:#fee2e2;color:#991b1b');
+      wrap.appendChild(badge);
+      var row = document.createElement('div');
+      row.style.cssText = 'display:flex;flex-wrap:wrap;gap:.4rem;justify-content:center';
+      var copyBtn = makeSmallBtn('링크 복사', '#ffffff', '#374151', '#d1d5db');
+      copyBtn.addEventListener('click', function() {
+        var job = navigator.clipboard ? navigator.clipboard.writeText(url) : Promise.reject(new Error('no clipboard'));
+        job.then(function() { showToast('인증 링크를 복사했어요.', 'success'); }, function() { window.prompt('인증 링크', url); });
+      });
+      var toggleBtn = makeSmallBtn(sec.open ? '인증 마감' : '인증 다시 열기', '#ffffff', '#374151', '#d1d5db');
+      toggleBtn.addEventListener('click', function() {
+        ref.update({ open: !sec.open, updatedAt: FV.serverTimestamp() })
+          .then(function() { renderCheckinPanel(a, box); }).catch(checkinFail);
+      });
+      var regenBtn = makeSmallBtn('코드 재발급', '#ffffff', '#dc2626', '#fca5a5');
+      regenBtn.addEventListener('click', function() {
+        if (!confirm('코드를 새로 발급하면 이전 QR과 코드로는 인증할 수 없어요. 계속할까요?')) return;
+        ref.update({ code: randomCode(), updatedAt: FV.serverTimestamp() })
+          .then(function() { renderCheckinPanel(a, box); }).catch(checkinFail);
+      });
+      row.appendChild(copyBtn);
+      row.appendChild(toggleBtn);
+      row.appendChild(regenBtn);
+      wrap.appendChild(row);
+      box.appendChild(wrap);
+    }).catch(function(e) {
+      console.error('인증 코드 조회 실패:', e);
+      box.textContent = '인증 코드를 불러오지 못했습니다. (' + (e.code || e.message) + ')';
+    });
+  }
+
+  function checkinFail(e) {
+    console.error('인증 설정 실패:', e);
+    showToast('인증 설정을 바꾸지 못했습니다.', 'error');
+  }
+
+  // 신청자별 참여 인증·공개 성찰 여부. 개설자·운영진만: 규칙이 인증 기록을 targetId·type 등호 조건 조회로만 허용한다.
+  function loadCheckinStatus(activityId, logsJob) {
+    var attend = ['webinar_attend', 'sharing_attend'].map(function(t) {
+      return db.collection('activityLog').where('targetId', '==', activityId).where('type', '==', t).get();
+    });
+    return Promise.all(attend.concat([logsJob || []])).then(function(r) {
+      var st = { attend: {}, reflect: {} };
+      [r[0], r[1]].forEach(function(s) {
+        s.forEach(function(doc) { var x = doc.data(); if (x.status !== 'rejected') st.attend[x.uid] = x.userName || ''; });
+      });
+      r[2].forEach(function(e) { if (e.type === 'reflection') st.reflect[e.uid] = true; });
+      return st;
+    });
+  }
+
+  function checkinSummary(list, st) {
+    var applied = {};
+    list.forEach(function(x) { applied[x.uid] = true; });
+    var uids = Object.keys(st.attend);
+    var walkIns = uids.filter(function(u) { return !applied[u]; }).map(function(u) { return st.attend[u] || '이름 없음'; });
+    return ' · 참여 인증 ' + uids.length + '명' + (walkIns.length ? ' (신청 없이 인증: ' + walkIns.join(', ') + ')' : '') +
+      ' · 성찰은 전체 공개로 남긴 기록만 보여요';
+  }
+
   // 신청자 목록 조회 (Firestore)
   function loadApplicants(activityId) {
     return db.collection(APPLICATIONS_COL)
@@ -739,6 +990,13 @@
       detailContent.appendChild(photoRow);
     }
 
+    // 성장패스 참여 인증 (모든 영역) + 이 활동의 회원 성찰. 공개 성찰은 아래 신청자 표도 함께 쓴다.
+    var logsJob = currentUser && userProfile && window.G ? G.loadActivityLogs(a.id) : null;
+    if (logsJob) logsJob.catch(function() {}); // 각 사용처에서 따로 처리
+    var canManageLogs = !!currentUser && (a.creatorUid === currentUser.uid || isAdminProfile());
+    detailContent.appendChild(buildCheckinArea(a));
+    detailContent.appendChild(buildReflectionArea(logsJob));
+
     // 신청자 목록
     var canViewApplicants = currentUser && userProfile && (
       userProfile.role === 'superAdmin' ||
@@ -768,7 +1026,11 @@
       applicantArea.appendChild(loadingText);
       detailContent.appendChild(applicantArea);
 
-      loadApplicants(a.id).then(function(list) {
+      Promise.all([
+        loadApplicants(a.id),
+        canManageLogs ? loadCheckinStatus(a.id, logsJob).catch(function(e) { console.warn('참여 인증 현황 조회 실패:', e); return null; }) : null
+      ]).then(function(r) {
+        var list = r[0], st = r[1];
         applicantArea.removeChild(loadingText);
         if (list.length === 0) {
           var empty = document.createElement('div');
@@ -783,7 +1045,7 @@
           table.style.borderCollapse = 'collapse';
           var thead = document.createElement('thead');
           var headerRow = document.createElement('tr');
-          ['번호', '이름', '신청일', '상태'].forEach(function(h) {
+          ['번호', '이름', '신청일', '상태'].concat(st ? ['참여 인증', '공개 성찰'] : []).forEach(function(h) {
             var th = document.createElement('th');
             th.textContent = h;
             th.style.padding = '0.4rem 0.5rem';
@@ -799,7 +1061,9 @@
           var tbody = document.createElement('tbody');
           for (var li = 0; li < list.length; li++) {
             var tr = document.createElement('tr');
-            [String(li + 1), list[li].name, list[li].date, list[li].status].forEach(function(v) {
+            var cells = [String(li + 1), list[li].name, list[li].date, list[li].status];
+            if (st) cells.push(st.attend.hasOwnProperty(list[li].uid) ? '○' : '—', st.reflect[list[li].uid] ? '○' : '—');
+            cells.forEach(function(v) {
               var td = document.createElement('td');
               td.textContent = v;
               td.style.padding = '0.4rem 0.5rem';
@@ -815,7 +1079,7 @@
           total.style.marginTop = '0.5rem';
           total.style.fontSize = '0.8rem';
           total.style.color = '#6b7280';
-          total.textContent = '총 ' + list.length + '명 신청';
+          total.textContent = '총 ' + list.length + '명 신청' + (st ? checkinSummary(list, st) : '');
           applicantArea.appendChild(total);
         }
       }).catch(function() {

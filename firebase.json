@@ -7,9 +7,19 @@
       "**/.*",
       "!.well-known",
       "**/node_modules/**",
-      "functions/**"
+      "functions/**",
+      "**/*.check.js"
     ],
     "headers": [
+      {
+        "source": "**",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache"
+          }
+        ]
+      },
       {
         "source": "/.well-known/assetlinks.json",
         "headers": [
@@ -24,6 +34,18 @@
       {
         "source": "**",
         "destination": "/index.html"
+      }
+    ],
+    "redirects": [
+      {
+        "source": "/apps",
+        "destination": "/resources/",
+        "type": 301
+      },
+      {
+        "source": "/apps/**",
+        "destination": "/resources/",
+        "type": 301
       }
     ]
   },

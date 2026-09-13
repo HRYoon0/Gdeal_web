@@ -100,8 +100,22 @@
     loadFirebaseAndFetch(container);
   }
 
+  // 현지(한국) 날짜 YYYY-MM-DD — toISOString()은 UTC라 오전 9시 전에는 어제 날짜가 된다
+  function localToday() {
+    var d = new Date(), p = function(n) { return (n < 10 ? '0' : '') + n; };
+    return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+  }
+
   function loadFirebaseAndFetch(container) {
     if (typeof firebase !== 'undefined' && typeof firebase.firestore === 'function') { fetchActivities(container); return; }
+    // fcm-client.js의 공용 로더 — 성장패스 카드와 SDK를 동시에 불러 서로 덮어쓰지 않게
+    if (window.gdealLoadFirebase) {
+      window.gdealLoadFirebase(['firestore']).then(function() { fetchActivities(container); }, function(e) {
+        console.error('Firebase 로드 실패:', e);
+        container.textContent = '나눔활동을 불러올 수 없습니다.';
+      });
+      return;
+    }
     var scripts = [];
     if (typeof firebase === 'undefined') {
       scripts.push('https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js');
@@ -121,7 +135,7 @@
     db.collection('sharingActivities').orderBy('createdAt','desc').limit(20).get()
       .then(function(snapshot) {
         container.textContent = '';
-        var today = new Date().toISOString().split('T')[0];
+        var today = localToday();
         var allActivities = [];
         var activeCards = [];
         var upcomingList = [];
@@ -567,6 +581,23 @@
     statusBadge.appendChild(dot);
     statusBadge.appendChild(document.createTextNode(' 활동중'));
     topRow.appendChild(statusBadge);
+
+    // 활동 당일: 성장패스 참여 인증으로 바로 가기 (카드 전체가 링크라 a 대신 span + 클릭 처리)
+    if (data._id && data.activityDate === localToday()) {
+      var checkin = document.createElement('span');
+      checkin.setAttribute('role', 'link');
+      checkin.tabIndex = 0;
+      checkin.style.cssText = 'display:inline-flex;align-items:center;padding:0.2rem 0.65rem;border-radius:9999px;font-size:0.72rem;font-weight:700;background:#497e56;color:#fff;cursor:pointer;';
+      checkin.textContent = '오늘 참여 인증 →';
+      var goCheckin = function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        location.href = '/growth/?w=' + encodeURIComponent(data._id);
+      };
+      checkin.addEventListener('click', goCheckin);
+      checkin.addEventListener('keydown', function(e) { if (e.key === 'Enter') goCheckin(e); });
+      topRow.appendChild(checkin);
+    }
 
     if (data.activityDate) {
       var dateChip = document.createElement('span');

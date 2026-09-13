@@ -4,14 +4,19 @@
 
   // 팝업 설정 - 이 부분만 수정하면 됩니다
   const POPUP_CONFIG = {
-    id: 'gdeal-popup-20260203',  // 팝업 ID (새 공지 시 변경)
-    title: '공지사항',
-    imageUrl: '/popup-notice.jpg',  // 팝업 이미지 경로
-    linkUrl: 'https://docs.google.com/forms/d/e/1FAIpQLSew31LVNFIwaW8eyMnWvO5bOjWPbM0mfOL1tUrjTpcoE2GmZA/viewform?usp=header',  // 이미지 클릭 시 이동할 URL
+    id: 'gdeal-popup-20260913-growth',  // 팝업 ID (새 공지 시 변경 — 바꾸면 "열지 않음"을 누른 사람에게도 다시 뜸)
+    title: '성장패스가 열렸어요',
+    // html이 있으면 이미지 대신 글 공지로 띄운다. 이미지 공지로 돌아가려면 html을 ''로 두고 imageUrl을 채운다.
+    html: '<strong>배움을 찍고, 실천을 기록하고, 성장을 나누다</strong>' +
+      '<p>나눔활동에 신청하거나 웨비나·카페연수 현장에서 QR로 참여를 인증하면 스탬프가 찍혀요. 성찰과 실천을 기록하면 배지가 쌓이고, 한 학기 기록은 포트폴리오로 묶을 수 있어요.</p>' +
+      '<p>웹앱 광장은 자료공유로 합쳤어요. 직접 만든 웹앱도 자료공유에 등록해 주세요.</p>',
+    imageUrl: '/popup-notice.jpg',  // 이미지 공지일 때 경로
+    linkUrl: '/growth/',  // 이미지 클릭 또는 글 공지 버튼의 이동 주소
+    linkText: '성장패스 둘러보기',
     width: 400,  // 팝업 너비 (px)
     top: 80,     // 상단 여백 (px)
     left: 20,    // 왼쪽 여백 (px)
-    enabled: false  // false로 변경하면 팝업 비활성화
+    enabled: true  // false로 변경하면 팝업 비활성화
   };
 
   // 쿠키 관련 함수
@@ -41,9 +46,13 @@
 
   // 팝업 HTML 생성
   function createPopupHTML() {
-    const imageContent = POPUP_CONFIG.linkUrl
+    const external = /^https?:/.test(POPUP_CONFIG.linkUrl || '');
+    const htmlContent = POPUP_CONFIG.html
+      ? `<div class="gdeal-popup-html">${POPUP_CONFIG.html}${POPUP_CONFIG.linkUrl ? `<a class="gdeal-popup-cta" href="${POPUP_CONFIG.linkUrl}"${external ? ' target="_blank" rel="noopener noreferrer"' : ''}>${POPUP_CONFIG.linkText || '자세히 보기'}</a>` : ''}</div>`
+      : '';
+    const imageContent = htmlContent || (POPUP_CONFIG.linkUrl
       ? `<a href="${POPUP_CONFIG.linkUrl}" target="_blank" rel="noopener noreferrer" class="gdeal-popup-image-link"><img src="${POPUP_CONFIG.imageUrl}" alt="공지사항" class="gdeal-popup-image"></a>`
-      : `<img src="${POPUP_CONFIG.imageUrl}" alt="공지사항" class="gdeal-popup-image">`;
+      : `<img src="${POPUP_CONFIG.imageUrl}" alt="공지사항" class="gdeal-popup-image">`);
 
     return `
       <div id="gdeal-popup-container" class="gdeal-popup-container" style="width: ${POPUP_CONFIG.width}px; top: ${POPUP_CONFIG.top}px; left: ${POPUP_CONFIG.left}px;">
@@ -131,6 +140,42 @@
           width: 100%;
           height: auto;
           display: block;
+        }
+
+        .gdeal-popup-html {
+          padding: 18px 20px 20px;
+          color: #1f2937;
+          font-size: 0.92rem;
+          font-weight: 500;
+          line-height: 1.65;
+          font-family: 'Paperlogy', -apple-system, BlinkMacSystemFont, 'Malgun Gothic', sans-serif;
+        }
+
+        .gdeal-popup-html strong {
+          display: block;
+          font-size: 1.02rem;
+          font-weight: 700;
+          color: #14532d;
+          margin-bottom: 8px;
+        }
+
+        .gdeal-popup-html p {
+          margin: 0 0 8px;
+        }
+
+        .gdeal-popup-cta {
+          display: inline-block;
+          margin-top: 6px;
+          padding: 9px 16px;
+          border-radius: 8px;
+          background: #66ae7d;
+          color: #fff !important;
+          font-weight: 700;
+          text-decoration: none;
+        }
+
+        .gdeal-popup-cta:hover {
+          background: #497e56;
         }
 
         .gdeal-popup-footer {

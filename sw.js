@@ -1,5 +1,5 @@
 // G-DEAL PWA Service Worker
-const CACHE_NAME = 'gdeal-v35';
+const CACHE_NAME = 'gdeal-v36';
 
 // 알림 → 페이지 네비게이션 전달용 IndexedDB 큐
 //   iOS PWA가 백그라운드에서 종료된 상태로 알림이 오면, 페이지가 콜드 스타트 되는 동안
@@ -170,8 +170,16 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // 서비스 워커의 fetch도 브라우저 HTTP 캐시를 거친다. 예전 max-age=3600으로 받아 둔 파일이
+  // 배포 뒤에도 쓰이지 않도록 같은 사이트 파일은 매번 서버에 재확인(바뀌지 않았으면 304라 가볍다).
+  // 페이지 이동(navigate) 요청은 fetch 옵션을 붙일 수 없어 그대로 둔다.
+  const sameOrigin = url.origin === self.location.origin;
+  const network = sameOrigin && event.request.mode !== 'navigate'
+    ? fetch(event.request, { cache: 'no-cache' })
+    : fetch(event.request);
+
   event.respondWith(
-    fetch(event.request)
+    network
       .then((response) => {
         // 응답 복제 (한 번은 브라우저에, 한 번은 캐시에)
         const responseToCache = response.clone();

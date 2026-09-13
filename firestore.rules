@@ -31,9 +31,10 @@ service cloud.firestore {
     function privilegeFieldsUnchanged() {
       let existing = resource.data;
       let incoming = request.resource.data;
-      return incoming.role == existing.role &&
-             incoming.memberTier == existing.memberTier &&
-             incoming.status == existing.status;
+      // .get(키, 기본값): 옛 회원 문서에 role 등이 없어도 비교가 오류로 거부되지 않게
+      return incoming.get('role', null) == existing.get('role', null) &&
+             incoming.get('memberTier', null) == existing.get('memberTier', null) &&
+             incoming.get('status', null) == existing.get('status', null);
     }
 
     // 교단일기 좋아요 토글 전용: likes 필드(+updatedAt)만 변경 허용
@@ -78,17 +79,47 @@ service cloud.firestore {
     }
 
     // ===== 자료공유: 배움회원 이상 본인 자료 관리, 관리자는 전체 관리 =====
+    //   (웹앱 광장 통합: 추천 featured는 관리자만, 사용 수 usedCount는 '사용해 봤어요' 배치로만 +1)
     match /resources/{resourceId} {
       allow read: if true;
 
-      // 생성: 승인된 회원(배움회원 이상), createdBy는 반드시 본인 uid
+      // 생성: 승인된 회원(배움회원 이상), createdBy는 반드시 본인 uid, 추천·사용 수 위조 불가
       allow create: if isApprovedMember() &&
-                       request.resource.data.createdBy == request.auth.uid;
+                       request.resource.data.createdBy == request.auth.uid &&
+                       request.resource.data.get('featured', false) == false &&
+                       request.resource.data.get('usedCount', 0) == 0;
 
-      // 수정/삭제: 본인 작성본 OR 관리자
-      allow update, delete: if isAdmin() ||
-                               (isApprovedMember() &&
-                                resource.data.createdBy == request.auth.uid);
+      // 수정: 관리자 전체 / 본인 자료는 createdBy·featured·usedCount 제외 / 누구나 '사용해 봤어요'로 +1
+      allow update: if isAdmin() ||
+                       (isApprovedMember() &&
+                        resource.data.createdBy == request.auth.uid &&
+                        !request.resource.data.diff(resource.data).affectedKeys()
+                          .hasAny(['createdBy', 'featured', 'usedCount'])) ||
+                       (isApprovedMember() &&
+                        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['usedCount']) &&
+                        request.resource.data.usedCount == resource.data.get('usedCount', 0) + 1 &&
+                        !exists(/databases/$(database)/documents/resources/$(resourceId)/uses/$(request.auth.uid)) &&
+                        existsAfter(/databases/$(database)/documents/resources/$(resourceId)/uses/$(request.auth.uid)));
+
+      // 삭제: 본인 작성본 OR 관리자
+      allow delete: if isAdmin() ||
+                       (isApprovedMember() &&
+                        resource.data.createdBy == request.auth.uid);
+
+      match /uses/{uid} {
+        allow read: if true;
+        allow create: if isApprovedMember() && request.auth.uid == uid;
+        allow delete: if isAdmin();
+      }
+
+      // 구조화된 활용 후기 (자료당 회원 1건)
+      match /reviews/{uid} {
+        allow read: if isApprovedMember();
+        allow create, update: if isApprovedMember() &&
+                                 request.auth.uid == uid &&
+                                 request.resource.data.uid == uid;
+        allow delete: if isAdmin() || (request.auth != null && request.auth.uid == uid);
+      }
     }
 
     // ===== 교단일기: 누구나 작성, 본인만 수정, 관리자도 삭제 가능 =====
@@ -169,6 +200,115 @@ service cloud.firestore {
       allow delete: if isAdmin() ||
                        (isApprovedMember() &&
                         resource.data.creatorUid == request.auth.uid);
+    }
+
+    // ================= 성장패스 (활동 기록 원장 · 웨비나 인증 · 배지 · 웹앱 광장 · 포트폴리오) =================
+
+    // 회원이 직접 남기는 원장 기록 검증
+    //   - 성찰/실천: 바로 인정(auto)
+    //   - 발표·진행/소모임 프로젝트: 운영진 확인 대기(pending)
+    //   - 참여 인증(웨비나·카페연수 등 나눔활동): 문서 ID가 {uid}_attend_{대상ID}(중복 방지)이고, 인증 코드가 비공개 코드와 일치할 때만
+    //   - 피드백(자료 후기): 문서 ID가 {uid}_feedback_{자료ID}(자료당 1회)
+    function validSelfLog(logId) {
+      let d = request.resource.data;
+      return isApprovedMember() &&
+             d.uid == request.auth.uid &&
+             d.visibility in ['private', 'group', 'public'] &&
+             (
+               (d.type in ['reflection', 'practice'] && d.status == 'auto') ||
+               (d.type in ['webinar_host', 'group_project'] && d.status == 'pending') ||
+               (d.type in ['webinar_attend', 'sharing_attend', 'event_attend'] && d.status == 'auto' &&
+                  logId == request.auth.uid + '_attend_' + d.targetId &&
+                  get(/databases/$(database)/documents/webinarSecrets/$(d.targetId)).data.open == true &&
+                  get(/databases/$(database)/documents/webinarSecrets/$(d.targetId)).data.code == d.checkinCode) ||
+               (d.type == 'feedback' && d.status == 'auto' &&
+                  logId == request.auth.uid + '_feedback_' + d.targetId &&
+                  exists(/databases/$(database)/documents/resources/$(d.targetId)))
+             );
+    }
+
+    // 웨비나: 공개 읽기, 관리자만 쓰기
+    match /webinars/{webinarId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // 나눔활동 개설자인지 (영역과 관계없이 자기 나눔활동의 인증 코드를 개설자가 직접 관리)
+    function isSharingCreator(activityId) {
+      return request.auth != null &&
+             exists(/databases/$(database)/documents/sharingActivities/$(activityId)) &&
+             get(/databases/$(database)/documents/sharingActivities/$(activityId)).data.creatorUid == request.auth.uid;
+    }
+
+    // 웨비나 인증 코드: 관리자 또는 해당 나눔활동 개설자만 읽고 씀. 회원 인증은 위 validSelfLog의 get()으로만 대조한다.
+    match /webinarSecrets/{webinarId} {
+      allow read, write: if isAdmin() || isSharingCreator(webinarId);
+    }
+
+    // 활동 기록 원장
+    match /activityLog/{logId} {
+      // resource == null: 없는 문서 조회 허용(웨비나 중복 인증 여부 확인용). 존재 여부 외 정보는 드러나지 않는다.
+      allow read: if resource == null || isAdmin() ||
+                     (request.auth != null && resource.data.uid == request.auth.uid) ||
+                     (isApprovedMember() && resource.data.visibility == 'public') ||
+                     // 나눔활동 개설자: 자기 활동의 참여 인증 기록만(성찰 내용은 제외). 조회는 targetId·type을 == 조건으로 걸어야 허용된다.
+                     (isApprovedMember() && resource.data.type in ['webinar_attend', 'sharing_attend'] &&
+                      get(/databases/$(database)/documents/sharingActivities/$(resource.data.targetId)).data.creatorUid == request.auth.uid) ||
+                     // 소모임 공유: 그 소모임 구성원만. 조회는 groupId·visibility를 == 조건으로 걸어야 허용된다.
+                     (isApprovedMember() && resource.data.visibility == 'group' &&
+                      request.auth.uid in get(/databases/$(database)/documents/groups/$(resource.data.groupId)).data.memberUids);
+
+      allow create: if isAdmin() || validSelfLog(logId);
+
+      // 본인은 내용·공개 범위만 수정 가능 (유형·상태·대상·소유자는 고정)
+      allow update: if isAdmin() ||
+                       (request.auth != null &&
+                        resource.data.uid == request.auth.uid &&
+                        request.resource.data.diff(resource.data).affectedKeys()
+                          .hasOnly(['answers', 'visibility', 'evidence', 'groupId', 'updatedAt']) &&
+                        request.resource.data.visibility in ['private', 'group', 'public']);
+
+      allow delete: if isAdmin() ||
+                       (request.auth != null && resource.data.uid == request.auth.uid);
+    }
+
+    // 배지 규칙: 공개 읽기(회원 화면에서 계산), 관리자만 설정
+    match /badgeRules/{ruleId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // 수동 배지 지급 기록
+    match /badgeGrants/{grantId} {
+      allow read: if isAdmin() ||
+                     (request.auth != null && resource.data.uid == request.auth.uid);
+      allow write: if isAdmin();
+    }
+
+    // 소모임
+    match /groups/{groupId} {
+      allow read: if isApprovedMember();
+      allow write: if isAdmin();
+    }
+
+    // 포트폴리오: 저장 시점의 기록을 복사해 둔 스냅샷. 링크 공유(shareMode='link')면 누구나 읽기.
+    match /portfolios/{portfolioId} {
+      allow read: if resource.data.shareMode == 'link' || isAdmin() ||
+                     (request.auth != null && resource.data.uid == request.auth.uid);
+
+      allow create: if isAdmin() ||
+                       (isApprovedMember() &&
+                        request.resource.data.uid == request.auth.uid &&
+                        request.resource.data.kind == 'personal');
+
+      allow update: if isAdmin() ||
+                       (request.auth != null &&
+                        resource.data.uid == request.auth.uid &&
+                        request.resource.data.uid == request.auth.uid &&
+                        request.resource.data.kind == 'personal');
+
+      allow delete: if isAdmin() ||
+                       (request.auth != null && resource.data.uid == request.auth.uid);
     }
 
     // ===== 나눔활동 신청: 본인 신청만 생성/수정/삭제 (관리자는 전체) =====
