@@ -540,3 +540,87 @@ exports.sendTestNotification = functions.https.onRequest(async (req, res) => {
     });
   }
 });
+
+
+// ===== 성장패스 점수판: 30분마다 전 회원 스탬프·배지를 계산해 leaderboard 문서 2개에 저장 =====
+// public = 상위 10명 순위·점수(이름·uid 없음, 누구나 읽기) / members = 이름 포함 전체(로그인 사용자만, firestore.rules)
+// 계산은 growth/rules.js 복사본(growth-rules.js — firebase.json predeploy가 배포 때 복사)으로 회원 화면과 같은 기준.
+const GR = require('./growth-rules.js');
+
+function lbDate(v) {
+  if (!v) return null;
+  if (typeof v.toDate === 'function') return v.toDate();
+  if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v)) {
+    const p = v.split('-');
+    return new Date(+p[0], p[1] - 1, +p[2]); // 날짜 문자열은 현지(한국) 자정
+  }
+  const d = new Date(v);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+// ponytail: 매번 컬렉션 전체를 읽는다(회원·기록 수백 건 규모). 수만 건이 되면 기록 쓰기 트리거로 회원별 합계를 누적할 것.
+async function buildLeaderboard() {
+  process.env.TZ = 'Asia/Seoul'; // 학기 경계(rules.js termOf)를 한국 시간으로
+  const [users, logs, diaries, resources, acts, apps, ruleSnap, grantSnap] = await Promise.all(
+    ['users', 'activityLog', 'diaries', 'resources', 'sharingActivities', 'sharingApplications', 'badgeRules', 'badgeGrants']
+      .map(c => db.collection(c).get())
+  );
+
+  // 회원별 원장 (growth/common.js loadLedger와 같은 정규화)
+  const byUid = {};
+  const push = (uid, e) => { if (uid) (byUid[uid] = byUid[uid] || []).push(e); };
+  logs.forEach(d => { const x = d.data(); push(x.uid, { type: x.type, status: x.status || 'auto', at: lbDate(x.occurredAt) || lbDate(x.createdAt), targetId: x.targetId || '' }); });
+  diaries.forEach(d => { const x = d.data(); push(x.authorId, { type: 'diary', status: 'auto', at: lbDate(x.createdAt) || lbDate(x.date), likes: (Array.isArray(x.likes) ? x.likes : []).filter(u => u && u !== x.authorId).length }); });
+  resources.forEach(d => { const x = d.data(); push(x.createdBy, { type: x.kind === 'webapp' ? 'app_register' : 'resource_share', status: 'auto', at: lbDate(x.createdAt) || lbDate(x.date), targetId: d.id }); });
+  acts.forEach(d => { const x = d.data(); push(x.creatorUid, { type: 'sharing_host', status: 'auto', at: lbDate(x.activityDate) || lbDate(x.createdAt), targetId: d.id }); });
+  apps.forEach(d => { const x = d.data(); push(x.applicantUid, { type: 'sharing_join', status: 'auto', at: lbDate(x.date) || lbDate(x.createdAt), targetId: x.activityId || '' }); });
+
+  const rules = ruleSnap.empty ? GR.DEFAULT_BADGES : ruleSnap.docs.map(d => Object.assign({}, d.data(), { id: d.id }));
+  const grants = {};
+  grantSnap.forEach(d => { const x = d.data(); (grants[x.uid] = grants[x.uid] || []).push(x.ruleId); });
+
+  const now = new Date();
+  const boards = { term: [], all: [] };
+  users.forEach(u => {
+    const x = u.data();
+    const entries = byUid[u.id];
+    if (!entries || (x.status && x.status !== 'approved')) return;
+    const badges = GR.evaluateBadges(rules, entries, grants[u.id] || [], now).filter(b => b.earned).length;
+    const base = { uid: u.id, name: x.displayName || '회원', featured: x.featuredBadge && x.featuredBadge.name ? x.featuredBadge.name : '', badges };
+    for (const period of ['term', 'all']) {
+      const stamps = GR.stampCounts(entries, period, now);
+      const score = stamps.join + stamps.reflect + stamps.practice + stamps.share; // 스탬프 1개 = 1점
+      if (score) boards[period].push(Object.assign({ score, stamps }, base));
+    }
+  });
+
+  // 점수 → 배지 수 순. 둘 다 같으면 같은 순위
+  for (const list of [boards.term, boards.all]) {
+    list.sort((a, b) => b.score - a.score || b.badges - a.badges || a.name.localeCompare(b.name, 'ko'));
+    list.forEach((r, i) => { const p = list[i - 1]; r.rank = p && p.score === r.score && p.badges === r.badges ? p.rank : i + 1; });
+  }
+  const anon = list => list.slice(0, 10).map(r => ({ rank: r.rank, score: r.score, badges: r.badges, stamps: r.stamps }));
+  const meta = { updatedAt: admin.firestore.FieldValue.serverTimestamp(), term: GR.termLabel(GR.termOf(now)) };
+  await db.collection('leaderboard').doc('public').set(Object.assign({ boards: { term: anon(boards.term), all: anon(boards.all) } }, meta));
+  await db.collection('leaderboard').doc('members').set(Object.assign({ boards }, meta));
+  return { term: boards.term.length, all: boards.all.length };
+}
+
+exports.growthLeaderboard = functions.pubsub
+  .schedule('every 30 minutes')
+  .timeZone('Asia/Seoul')
+  .onRun(async () => {
+    const r = await buildLeaderboard();
+    console.log(`점수판 갱신: 이번 학기 ${r.term}명, 전체 ${r.all}명`);
+  });
+
+// 운영진이 바로 갱신할 때 (관리자만)
+exports.refreshLeaderboard = functions.https.onCall(async (data, context) => {
+  if (!context.auth) throw new functions.https.HttpsError('unauthenticated', '로그인이 필요합니다.');
+  const me = await db.collection('users').doc(context.auth.uid).get();
+  const x = me.exists ? me.data() : {};
+  if (x.role !== 'superAdmin' && x.memberTier !== 'operations-office') {
+    throw new functions.https.HttpsError('permission-denied', '운영진만 갱신할 수 있습니다.');
+  }
+  return buildLeaderboard();
+});

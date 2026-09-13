@@ -51,3 +51,6 @@ functions/.env.*
 # _next 디렉토리 내 백업 파일만 제외
 _next/**/*.backup*
 _next/**/*.bak*
+
+# 성장패스 점수판: 배포 때 growth/rules.js를 복사해 쓰는 사본 (firebase.json predeploy)
+functions/growth-rules.js

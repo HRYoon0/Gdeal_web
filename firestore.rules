@@ -285,6 +285,12 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // 성장패스 점수판: Cloud Function(Admin SDK)만 쓴다. public(이름 없음)은 누구나, members(이름 포함)는 로그인한 사용자만
+    match /leaderboard/{docId} {
+      allow read: if docId == 'public' || request.auth != null;
+      allow write: if false;
+    }
+
     // 소모임
     match /groups/{groupId} {
       allow read: if isApprovedMember();

@@ -332,6 +332,41 @@ a.g-btn.on { border-color: #497e56 !important; }
   .g-modal { padding: 1.1rem; }
 }
 
+
+/* 홈 성장패스 점수판 */
+.g-board-summary {
+  display: flex; align-items: center; justify-content: space-between; gap: .5rem;
+  cursor: pointer; list-style: none; font-size: 1.1rem; font-weight: 700; color: #111827;
+}
+.g-board-summary::-webkit-details-marker { display: none; }
+.g-board-summary::after { content: '접기'; font-size: .82rem; font-weight: 600; color: #497e56; }
+.g-board:not([open]) .g-board-summary::after { content: '펼치기'; }
+.g-board-list { list-style: none; margin: 0; padding: 0; }
+.g-board-row {
+  display: grid; grid-template-columns: 2.25rem minmax(0, 1fr) auto auto 4.5rem;
+  align-items: center; gap: .75rem; padding: .6rem .5rem; border-bottom: 1px solid #f0f0f0;
+}
+.g-board-row.me { background: #f0faf3; border-radius: .5rem; }
+.g-board-rank {
+  width: 2rem; height: 2rem; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center;
+  font-weight: 700; background: #f3f4f6; color: #374151;
+}
+.g-board-rank.r1 { background: #fde68a; color: #92400e; }
+.g-board-rank.r2 { background: #d1d5db; color: #1f2937; }
+.g-board-rank.r3 { background: #fed7aa; color: #9a3412; }
+.g-board-who { min-width: 0; font-weight: 600; color: #111827; overflow-wrap: anywhere; }
+.g-board-sub { font-size: .75rem; font-weight: 500; color: #5f5f66; }
+.g-board-hidden { font-weight: 500; color: #8a8a93; }
+.g-board-stamps { display: flex; gap: .55rem; font-size: .8rem; font-weight: 600; white-space: nowrap; }
+.g-board-badges { font-size: .8rem; font-weight: 500; color: #5f5f66; white-space: nowrap; }
+.g-board-score { text-align: right; font-size: 1.35rem; font-weight: 700; color: #497e56; white-space: nowrap; }
+.g-board-score small { margin-left: .1rem; font-size: .75rem; font-weight: 600; color: #5f5f66; }
+.g-board-gap { text-align: center; color: #9ca3af; line-height: 1; padding: .15rem 0; }
+@media (max-width: 767px) {
+  .g-board-row { grid-template-columns: 2rem minmax(0, 1fr) auto; gap: .5rem; }
+  .g-board-stamps, .g-board-badges { display: none; }
+}
+
 @media print {
   .no-print, .desktop-sidebar-container, .mobile-sidebar-container, #mobileMenuBtn, header, footer, .g-banner { display: none !important; }
   body, .g-page { background: #fff !important; }

@@ -51,7 +51,8 @@
   },
   "functions": {
     "source": "functions",
-    "runtime": "nodejs22"
+    "runtime": "nodejs22",
+    "predeploy": ["cp \"$PROJECT_DIR/growth/rules.js\" \"$RESOURCE_DIR/growth-rules.js\""]
   },
   "firestore": {
     "rules": "firestore.rules",
