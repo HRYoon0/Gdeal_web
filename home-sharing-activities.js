@@ -106,11 +106,16 @@
     return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
   }
 
+  // auth까지 필요하다 — 대상이 지정된 활동을 홈에서도 대상 회원에게만 보이려면 등급을 알아야 한다
+  function hasSdk() {
+    return typeof firebase !== 'undefined' && typeof firebase.firestore === 'function' && typeof firebase.auth === 'function';
+  }
+
   function loadFirebaseAndFetch(container) {
-    if (typeof firebase !== 'undefined' && typeof firebase.firestore === 'function') { fetchActivities(container); return; }
+    if (hasSdk()) { fetchActivities(container); return; }
     // fcm-client.js의 공용 로더 — 성장패스 카드와 SDK를 동시에 불러 서로 덮어쓰지 않게
     if (window.gdealLoadFirebase) {
-      window.gdealLoadFirebase(['firestore']).then(function() { fetchActivities(container); }, function(e) {
+      window.gdealLoadFirebase(['auth', 'firestore']).then(function() { fetchActivities(container); }, function(e) {
         console.error('Firebase 로드 실패:', e);
         container.textContent = '나눔활동을 불러올 수 없습니다.';
       });
@@ -119,8 +124,11 @@
     var scripts = [];
     if (typeof firebase === 'undefined') {
       scripts.push('https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js');
-      scripts.push('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js');
-    } else if (typeof firebase.firestore !== 'function') {
+    }
+    if (typeof firebase === 'undefined' || typeof firebase.auth !== 'function') {
+      scripts.push('https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js');
+    }
+    if (typeof firebase === 'undefined' || typeof firebase.firestore !== 'function') {
       scripts.push('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js');
     }
     var loaded = 0;
@@ -128,12 +136,41 @@
     for (var i = 0; i < scripts.length; i++) { var s = document.createElement('script'); s.src = scripts[i]; s.onload = onLoad; document.head.appendChild(s); }
   }
 
+  // ===== 신청 대상 등급 (나눔활동 목록 sharing.js와 같은 서열) =====
+  //   ponytail: 서열 표를 sharing.js와 나눠 갖는다. 두 파일이 같은 페이지에 뜨는 일이 없어
+  //   공용 파일을 새로 만드는 대신 상수만 복제했다. 등급 체계가 바뀌면 두 곳을 같이 고칠 것.
+  var TIER_RANK = { '': 0, 'learning-member': 1, 'sharing-member': 2, 'operations-office': 3 };
+
+  // 지금 보고 있는 사람의 등급. 비로그인·조회 실패는 0(제한 없음 활동만 보임).
+  function loadViewerRank() {
+    if (typeof firebase === 'undefined' || typeof firebase.auth !== 'function') return Promise.resolve({ rank: 0, uid: '' });
+    return new Promise(function(resolve) {
+      var unsub = firebase.auth().onAuthStateChanged(function(user) {
+        unsub();
+        if (!user) { resolve({ rank: 0, uid: '' }); return; }
+        firebase.firestore().collection('users').doc(user.uid).get().then(function(doc) {
+          var d = doc.exists ? doc.data() : {};
+          if (!doc.exists || (d.status && d.status !== 'approved')) { resolve({ rank: 0, uid: user.uid }); return; }
+          var rank = d.role === 'superAdmin' ? 3 : (TIER_RANK[d.memberTier] || 0);
+          resolve({ rank: rank, uid: user.uid });
+        }).catch(function(e) {
+          console.warn('등급 조회 실패:', e);
+          resolve({ rank: 0, uid: user.uid });
+        });
+      });
+    });
+  }
+
   function fetchActivities(container) {
     try{firebase.app();}catch(e){firebase.initializeApp(firebaseConfig);}
     var db = firebase.firestore();
 
-    db.collection('sharingActivities').orderBy('createdAt','desc').limit(20).get()
-      .then(function(snapshot) {
+    Promise.all([
+      db.collection('sharingActivities').orderBy('createdAt','desc').limit(20).get(),
+      loadViewerRank()
+    ])
+      .then(function(r) {
+        var snapshot = r[0], viewer = r[1];
         container.textContent = '';
         var today = localToday();
         var allActivities = [];
@@ -146,6 +183,10 @@
           var d = doc.data();
           d._id = doc.id;
           var st = d.status || '활동중';
+
+          // 대상이 지정된 활동은 대상 등급·개설자에게만 (통계에도 넣지 않는다)
+          if (d.minTier && d.creatorUid !== viewer.uid && viewer.rank < (TIER_RANK[d.minTier] || 0)) return;
+
           allActivities.push(d);
 
           // 카테고리 통계

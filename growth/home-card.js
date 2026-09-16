@@ -103,7 +103,8 @@
     var at = G.toDate(d.updatedAt);
     var when = at ? ' · ' + G.fmtDate(at) + ' ' + ('0' + at.getHours()).slice(-2) + ':' + ('0' + at.getMinutes()).slice(-2) + ' 기준(30분마다 갱신)' : '';
 
-    return '<details class="g-card g-board" id="' + BOARD_ID + '"' + (pref(BOARD_OPEN_KEY, '1') === '1' ? ' open' : '') + '>' +
+    // 기본은 접힘('0') — 홈 첫 화면을 점수판이 차지하지 않게. 펼쳐 둔 회원은 저장값이 그대로 이긴다.
+    return '<details class="g-card g-board" id="' + BOARD_ID + '"' + (pref(BOARD_OPEN_KEY, '0') === '1' ? ' open' : '') + '>' +
       '<summary class="g-board-summary"><span>성장패스 점수판</span></summary>' +
       '<div class="g-chips" style="margin:.75rem 0">' + [['all', '전체 누적'], ['term', d.term || '이번 학기']].map(function (v) {
         return '<button type="button" class="g-chip' + (view === v[0] ? ' on' : '') + '" data-board-view="' + v[0] + '">' + esc(v[1]) + '</button>';

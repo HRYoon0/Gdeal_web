@@ -29,6 +29,32 @@
   var ACTIVITIES_COL = 'sharingActivities';
   var APPLICATIONS_COL = 'sharingApplications';
 
+  // ===== 신청 대상 등급 (minTier) =====
+  //   활동 문서의 minTier가 비어 있으면 '제한 없음'. 값이 있으면 그 등급 이상만
+  //   목록에 보이고 신청할 수 있다. 서열은 관리자 화면·성장패스와 같은 값을 쓴다.
+  var TIER_RANK = { '': 0, 'learning-member': 1, 'sharing-member': 2, 'operations-office': 3 };
+  var TIER_LABEL = { 'learning-member': '배움회원 이상', 'sharing-member': '나눔회원 이상', 'operations-office': '운영사무국만' };
+
+  function tierRank(profile) {
+    if (!profile) return 0;
+    if (profile.role === 'superAdmin') return 3;
+    return TIER_RANK[profile.memberTier] || 0;
+  }
+
+  // 이 활동이 지금 사용자에게 보이는가.
+  //   개설자 본인과 운영사무국·최고관리자는 대상과 무관하게 본다(관리·수정이 필요하므로).
+  function canSeeActivity(a) {
+    if (!a || !a.minTier) return true;
+    if (currentUser && a.creatorUid === currentUser.uid) return true;
+    if (isAdminProfile()) return true;
+    return tierRank(userProfile) >= (TIER_RANK[a.minTier] || 0);
+  }
+
+  function activityById(id) {
+    for (var i = 0; i < activities.length; i++) { if (activities[i].id === id) return activities[i]; }
+    return null;
+  }
+
   // Google Drive 설정
   var DRIVE_API_KEY = 'AIzaSyASgrkie4njd-Mk0uF1FbPYj0w9UPg0sOE';
   var DRIVE_ROOT_FOLDER = '1I3scHTk6gD2Jfni7CUKQLdUCmmLJyXQX';
@@ -397,6 +423,7 @@
           description: data.description || '',
           images: data.images || [],
           status: data.status || '활동중',
+          minTier: data.minTier || '',
           appliedCount: data.appliedCount || 0,
           createdAt: data.createdAt || ''
         });
@@ -440,6 +467,7 @@
         activityTime: payload.activityTime,
         location: payload.location,
         capacity: payload.capacity,
+        minTier: payload.minTier,
         description: payload.description,
         images: selectedPhotos,
         updatedAt: now
@@ -457,6 +485,7 @@
         activityTime: payload.activityTime,
         location: payload.location,
         capacity: payload.capacity,
+        minTier: payload.minTier,
         description: payload.description,
         images: selectedPhotos,
         status: '활동중',
@@ -513,6 +542,12 @@
   // 활동 신청 (Firestore + 시트 동기화)
   function applyDirect(activityId) {
     if (!currentUser) return;
+    // 대상 등급 확인 — 목록에서 숨기는 것과 같은 기준(Firestore 규칙도 같은 조건으로 막는다)
+    var target = activityById(activityId);
+    if (target && !canSeeActivity(target)) {
+      showToast('이 활동은 ' + (TIER_LABEL[target.minTier] || '지정된 대상') + ' 신청할 수 있습니다.', 'error');
+      return;
+    }
     if (!confirm('이 활동에 신청하시겠습니까?')) return;
 
     var applicantName = currentUser.displayName || currentUser.email || '사용자';
@@ -800,8 +835,12 @@
     hideLoading();
     var filtered = getFilteredActivities();
 
+    // 대상 지정으로 숨긴 활동은 "총 N개"에서도 빼야 숨김 사실이 드러나지 않는다
+    var visibleTotal = 0;
+    for (var vi = 0; vi < activities.length; vi++) { if (canSeeActivity(activities[vi])) visibleTotal++; }
+
     if (filterResultCount) {
-      filterResultCount.textContent = activities.length > 0 ? '총 ' + activities.length + '개 중 ' + filtered.length + '개 표시' : '';
+      filterResultCount.textContent = visibleTotal > 0 ? '총 ' + visibleTotal + '개 중 ' + filtered.length + '개 표시' : '';
     }
 
     if (filtered.length === 0) {
@@ -839,7 +878,15 @@
 
         var tdName = document.createElement('td');
         tdName.className = 'activity-name';
-        tdName.textContent = a.name || '';
+        // 대상 지정 배지는 활동명 '앞'에 — 제목이 길어 줄바꿈되면 뒤에 붙은 배지가 맨 아랫줄에 홀로 떨어진다.
+        //   (확장 프로그램의 전역 리셋에도 모양이 남도록 인라인 스타일)
+        if (a.minTier) {
+          var tierBadge = document.createElement('span');
+          tierBadge.style.cssText = 'display:inline-block;margin-right:.4rem;padding:.1rem .45rem;border-radius:.35rem;background:#fef3c7;color:#92400e;font-size:.7rem;font-weight:700;vertical-align:middle;white-space:nowrap;';
+          tierBadge.textContent = TIER_LABEL[a.minTier] || '대상 지정';
+          tdName.appendChild(tierBadge);
+        }
+        tdName.appendChild(document.createTextNode(a.name || ''));
         tdName.addEventListener('click', function() { showDetail(activityItem); });
         tr.appendChild(tdName);
 
@@ -938,7 +985,9 @@
       ['상태', '__STATUS__'],
       ['나눔 영역', (getCategoryGroup(a.category) ? getCategoryGroup(a.category) + ' > ' : '') + (a.category || '-')],
       ['활동명', a.name], ['개설자', a.creator], ['일시', dateTimeText],
-      ['장소/링크', a.location], ['정원', capText], ['활동 내용', a.description], ['생성일', a.createdAt]
+      ['장소/링크', a.location], ['정원', capText],
+      ['신청 대상', TIER_LABEL[a.minTier] || '제한 없음'],
+      ['활동 내용', a.description], ['생성일', a.createdAt]
     ];
     for (var i = 0; i < fields.length; i++) {
       var row = document.createElement('div');
@@ -1113,6 +1162,7 @@
     document.getElementById('submitBtn').textContent = '개설하기';
     document.getElementById('editActivityId').value = '';
     activityForm.reset();
+    document.getElementById('minTier').value = '';
     categoryInput.value = '';
     categorySelected.textContent = '나눔 영역을 선택해주세요';
     categorySelected.classList.add('placeholder');
@@ -1151,6 +1201,7 @@
     document.getElementById('activityTime').value = a.activityTime || '';
     document.getElementById('activityLocation').value = a.location || '';
     document.getElementById('capacity').value = a.capacity || '';
+    document.getElementById('minTier').value = a.minTier || '';
     document.getElementById('description').value = a.description || '';
     selectedPhotos = (a.images || []).slice();
     renderPhotoPreview();
@@ -1181,6 +1232,7 @@
       activityTime: document.getElementById('activityTime').value,
       location: document.getElementById('activityLocation').value.trim(),
       capacity: document.getElementById('capacity').value || '0',
+      minTier: document.getElementById('minTier').value || '',
       description: document.getElementById('description').value.trim()
     };
     if (!payload.category) { showToast('나눔 영역을 선택해주세요.', 'error'); return; }
@@ -1348,6 +1400,9 @@
     for (var i = 0; i < activities.length; i++) {
       var a = activities[i];
       var actStatus = a.status || '활동중';
+
+      // 대상 등급 필터 — 대상이 지정된 활동은 대상자·개설자·운영진에게만 보인다
+      if (!canSeeActivity(a)) continue;
 
       // 상태 필터
       if (!checkedStatus[actStatus]) continue;

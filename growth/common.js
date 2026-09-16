@@ -669,6 +669,9 @@
   // 관리자 화면에서 등록한 웨비나(webinars) + 모든 나눔활동(웨비나·카페연수·별뉘·독서모임·미니스터디)
   var SHARING_WEBINAR_CATEGORY = '디지털 수업실천 웨비나';
 
+  // 나눔활동 신청 대상 등급 서열 (sharing.js·firestore.rules와 같은 값)
+  var TIER_RANK = { '': 0, 'learning-member': 1, 'sharing-member': 2, 'operations-office': 3 };
+
   // 인증 기록 유형: 웨비나는 webinar_attend, 그 밖의 나눔활동은 sharing_attend
   function attendTypeOf(w) {
     if (w && w.source === 'events') return 'event_attend';
@@ -681,6 +684,9 @@
       return s.docs.map(function (d) { return Object.assign({}, d.data(), { id: d.id, source: 'admin', category: '웨비나' }); });
     }).catch(function (e) { console.warn('웨비나 조회 실패:', e); return []; });
     var sharing = db.collection('sharingActivities').get().then(function (s) {
+      // 대상이 지정된 활동(minTier)은 나눔활동 목록과 같은 기준으로 대상자·개설자·운영진에게만
+      var p = currentProfile;
+      var myRank = !p ? 0 : (p.role === 'superAdmin' || p.memberTier === 'operations-office' ? 3 : (TIER_RANK[p.memberTier] || 0));
       return s.docs.map(function (d) {
         var x = d.data();
         return {
@@ -693,8 +699,11 @@
           speaker: x.creator || '',
           link: safeUrl(x.location),
           creatorUid: x.creatorUid || '',
+          minTier: x.minTier || '',
           status: x.status || '활동중'
         };
+      }).filter(function (w) {
+        return !w.minTier || (p && w.creatorUid === p.uid) || myRank >= (TIER_RANK[w.minTier] || 0);
       });
     }).catch(function (e) { console.warn('나눔활동 조회 실패:', e); return []; });
     // 대외행사: 인증 코드는 운영진만 연다(관리자 참여 인증 탭). 신청자 명단이 없어 인증 시작 알림은 없다.

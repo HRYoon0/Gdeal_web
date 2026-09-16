@@ -15,14 +15,26 @@
 var SPREADSHEET_ID = '1CxbGuBz6UI4G5GgBtEGReRpN6pR2SjTdDiFm7EJqaVg';
 
 // 시트 헤더 정의
-var ACTIVITY_HEADERS = ['ID', '나눔영역', '활동명', '개설자', '개설자UID', '날짜', '시간', '장소/링크', '정원', '활동내용', '신청수', '생성일', '수정일'];
+//   '신청대상'은 맨 끝에 붙인다 — 아래 코드가 row[10](신청수), row[11](생성일)처럼
+//   위치 인덱스로 읽기 때문에 중간에 끼우면 기존 행이 한 칸씩 어긋난다.
+var ACTIVITY_HEADERS = ['ID', '나눔영역', '활동명', '개설자', '개설자UID', '날짜', '시간', '장소/링크', '정원', '활동내용', '신청수', '생성일', '수정일', '신청대상'];
 var APPLY_HEADERS = ['ID', '활동ID', '신청자', '신청자UID', '신청일', '상태'];
 
+// 신청 대상 등급 → 시트에 적을 한글 라벨 (웹 sharing.js의 TIER_LABEL과 같은 문구)
+//   빈 값이면 '제한 없음'. 시트는 열람용이라 코드값 대신 사람이 읽는 말로 적는다.
+var TIER_LABELS = {
+  'learning-member': '배움회원 이상',
+  'sharing-member': '나눔회원 이상',
+  'operations-office': '운영사무국만'
+};
+function tierLabel(v) { return TIER_LABELS[v] || '제한 없음'; }
+
 /**
- * 시트 자동 생성/초기화 함수
- * Apps Script 에디터에서 이 함수를 선택하고 ▶ 실행하면
- * "활동"과 "신청" 시트가 자동으로 생성됩니다.
- * 이미 존재하는 시트는 건드리지 않고, 없는 시트만 새로 만듭니다.
+ * 시트 자동 생성/초기화 함수 (최초 설치 전용)
+ *
+ * ⚠️ 주의: 이 함수는 기존 "활동"·"신청" 시트를 삭제하고 새로 만듭니다.
+ *    이미 운영 중인 시트에서 실행하면 그동안 쌓인 활동·신청 기록이 모두 사라집니다.
+ *    열만 추가하려면 아래 addMinTierColumn() 같은 개별 함수를 쓰세요.
  */
 function setupSheets() {
   var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
@@ -46,7 +58,7 @@ function setupSheets() {
       .setHorizontalAlignment('center');
     activitySheet.setFrozenRows(1);
     // 열 너비 개별 설정
-    var actColWidths = [120, 180, 200, 100, 160, 110, 80, 250, 60, 300, 60, 100, 100];
+    var actColWidths = [120, 180, 200, 100, 160, 110, 80, 250, 60, 300, 60, 100, 100, 120];
     for (var c = 0; c < actColWidths.length; c++) {
       activitySheet.setColumnWidth(c + 1, actColWidths[c]);
     }
@@ -58,7 +70,7 @@ function setupSheets() {
       .setFontWeight('bold')
       .setBackground('#f0faf3')
       .setHorizontalAlignment('center');
-    var actColWidths2 = [120, 180, 200, 100, 160, 110, 80, 250, 60, 300, 200, 200, 60, 100, 100];
+    var actColWidths2 = [120, 180, 200, 100, 160, 110, 80, 250, 60, 300, 60, 100, 100, 120];
     for (var c2 = 0; c2 < actColWidths2.length; c2++) {
       activitySheet.setColumnWidth(c2 + 1, actColWidths2[c2]);
     }
@@ -108,6 +120,29 @@ function setupSheets() {
   }
 
   Logger.log('🎉 시트 설정 완료!');
+}
+
+/**
+ * "활동" 시트에 '신청대상' 열만 추가 (기존 데이터 보존)
+ *
+ * 이미 운영 중인 시트에 열을 더할 때 실행합니다.
+ * 기존 행은 빈칸으로 남고, 빈칸 = 제한 없음으로 읽습니다.
+ * (setupSheets는 시트를 지우고 다시 만들기 때문에 이 용도로 쓰면 안 됩니다)
+ */
+function addMinTierColumn() {
+  var sheet = getActivitySheet();
+  var col = ACTIVITY_HEADERS.length; // 14번째 열
+  if (String(sheet.getRange(1, col).getValue()) === '신청대상') {
+    Logger.log('ℹ️ 이미 "신청대상" 열이 있습니다. (' + col + '번째)');
+    return;
+  }
+  sheet.getRange(1, col)
+    .setValue('신청대상')
+    .setFontWeight('bold')
+    .setBackground('#f0faf3')
+    .setHorizontalAlignment('center');
+  sheet.setColumnWidth(col, 120);
+  Logger.log('✅ "신청대상" 열(' + col + '번째) 추가 완료. 기존 행은 빈칸 = 제한 없음.');
 }
 
 function getSpreadsheet() {
@@ -249,7 +284,8 @@ function listActivities(uid) {
       description: String(row[9] || ''),
       appliedCount: Number(row[10]) || 0,
       createdAt: String(createdAt || ''),
-      updatedAt: String(updatedAt || '')
+      updatedAt: String(updatedAt || ''),
+      minTier: String(row[13] || '')  // 한글 라벨 ('제한 없음'·'나눔회원 이상' 등)
     });
   }
 
@@ -312,7 +348,8 @@ function createActivity(body) {
     body.description || '',
     0,
     now,
-    now
+    now,
+    tierLabel(body.minTier)
   ]);
 
   return createJsonResponse({ success: true, id: id });
@@ -350,7 +387,7 @@ function updateActivity(body) {
   var updDateVal = body.activityDate ? "'" + body.activityDate : '';
   var updTimeVal = body.activityTime ? "'" + body.activityTime : '';
 
-  sheet.getRange(rowIndex, 2, 1, 12).setValues([[
+  sheet.getRange(rowIndex, 2, 1, 13).setValues([[
     body.category || data[rowIndex - 1][1],
     body.name || data[rowIndex - 1][2],
     data[rowIndex - 1][3],
@@ -362,7 +399,8 @@ function updateActivity(body) {
     body.description || '',
     data[rowIndex - 1][10],
     data[rowIndex - 1][11],
-    now
+    now,
+    tierLabel(body.minTier)
   ]]);
 
   return createJsonResponse({ success: true });

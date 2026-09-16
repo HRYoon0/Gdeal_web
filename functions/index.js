@@ -227,7 +227,31 @@ exports.onDiaryCreated = functions.firestore
     });
   });
 
+// ===== 나눔활동 신청 대상 등급 (웹 sharing.js·firestore.rules와 같은 서열) =====
+const TIER_RANK = { '': 0, 'learning-member': 1, 'sharing-member': 2, 'operations-office': 3 };
+
+function tierRankOf(user) {
+  return user.role === 'superAdmin' ? 3 : (TIER_RANK[user.memberTier] || 0);
+}
+
+// minTier 이상 자격을 가진 승인 회원의 uid 목록
+// ponytail: users 컬렉션 전체를 읽는다(회원 수백 명 규모, buildLeaderboard와 같은 방식).
+//           수만 명이 되면 등급별 색인 쿼리로 바꿀 것.
+async function uidsMeetingTier(minTier) {
+  const need = TIER_RANK[minTier] || 0;
+  const snap = await db.collection('users').get();
+  return snap.docs
+    .filter(d => {
+      const x = d.data();
+      if (x.status && x.status !== 'approved') return false;
+      return tierRankOf(x) >= need;
+    })
+    .map(d => d.data().uid || d.id);
+}
+
 // 나눔활동 개설 시 알림
+//   대상(minTier)이 지정된 활동은 그 등급 회원에게만 보낸다 — 안 그러면 목록에서 안 보이는 활동의
+//   알림만 받고 눌러 들어와도 찾을 수 없는 상태가 된다.
 exports.onSharingActivityCreated = functions.firestore
   .document('sharingActivities/{activityId}')
   .onCreate(async (snap, context) => {
@@ -235,7 +259,15 @@ exports.onSharingActivityCreated = functions.firestore
     const config = notificationConfig.sharing;
     const categoryText = activityData.category ? `[${activityData.category}] ` : '';
 
-    const tokens = await getActiveTokens('sharing');
+    const minTier = activityData.minTier || '';
+    let tokens;
+    if (minTier) {
+      const uids = await uidsMeetingTier(minTier);
+      tokens = await getUserTokens(uids, 'sharing');
+      console.log(`나눔활동 알림(대상 ${minTier}): 자격 회원 ${uids.length}명, 기기 ${tokens.length}대`);
+    } else {
+      tokens = await getActiveTokens('sharing');
+    }
     console.log(`나눔활동 알림 발송 대상: ${tokens.length}명`);
 
     await sendPushNotification(tokens, {
@@ -255,15 +287,18 @@ exports.onSharingActivityCreated = functions.firestore
 
 const ATTEND_TYPES = ['webinar_attend', 'sharing_attend'];
 
-// 회원 uid 목록 → 알림을 켠 기기 토큰 (성장패스 알림을 끈 기기 제외, 항목이 없던 옛 토큰은 켜진 것으로 본다)
-async function getUserTokens(uids) {
+// 회원 uid 목록 → 알림을 켠 기기 토큰 (해당 구독을 끈 기기 제외, 항목이 없던 옛 토큰은 켜진 것으로 본다)
+//   subType 기본값은 'growth'(성장패스 개인 알림). 대상 지정 나눔활동은 'sharing'으로 부른다 —
+//   구독 항목을 안 맞추면 "나눔활동 알림은 켜고 성장패스는 끈" 회원이 통째로 누락된다.
+async function getUserTokens(uids, subType) {
+  const key = subType || 'growth';
   const list = [...new Set((uids || []).filter(Boolean))];
   const tokens = [];
   for (let i = 0; i < list.length; i += 10) {
     const snap = await db.collection('fcm_tokens').where('uid', 'in', list.slice(i, i + 10)).get();
     snap.forEach(doc => {
       const d = doc.data();
-      if (d.token && d.isActive !== false && !(d.subscriptions && d.subscriptions.growth === false)) tokens.push(d.token);
+      if (d.token && d.isActive !== false && !(d.subscriptions && d.subscriptions[key] === false)) tokens.push(d.token);
     });
   }
   return tokens;
