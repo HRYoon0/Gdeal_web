@@ -273,9 +273,18 @@
       (a.activityTypes || []).map(function (t) { return '<span class="g-tag">' + esc(t) + '</span>'; }).join('');
   }
 
+  // 대표 이미지 주소: 드라이브 파일 링크(/file/d/ID/view, open?id=ID)는 미리보기 '페이지'라 <img>로 안 뜸 → 썸네일 주소로 변환
+  function thumbSrc(u) {
+    var s = G.safeUrl(u);
+    var m = s && s.match(/drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?(?:[^#]*&)?id=)([\w-]+)/);
+    return m ? 'https://drive.google.com/thumbnail?id=' + m[1] + '&sz=w1000' : s;
+  }
+  // 이미지가 아닌 주소(웹페이지 등)는 깨진 아이콘 대신 썸네일 영역째 숨김
+  var THUMB_ERR = ' onerror="this.parentNode.style.display=\'none\'"';
+
   function cardHtml(a, featuredRow) {
     var fav = state.favs.indexOf(a.id) !== -1;
-    var img = G.safeUrl(a.imageUrl);
+    var img = thumbSrc(a.imageUrl);
     return '<div class="g-card r-card"' + (featuredRow ? '' : ' id="' + esc(a.id) + '"') + '>' +
       '<div class="r-card-head"><div>' +
       '<span class="g-tag green">' + (a.kind === 'webapp' ? '웹앱' : '자료') + '</span>' +
@@ -283,7 +292,7 @@
       (canManage(a) ? '<div class="g-row" style="gap:.3rem;flex-shrink:0">' +
         '<button class="g-btn small secondary" data-act="edit" data-id="' + esc(a.id) + '">수정</button>' +
         '<button class="g-btn small danger" data-act="del" data-id="' + esc(a.id) + '">삭제</button></div>' : '') + '</div>' +
-      (img ? '<div class="r-thumb"><img src="' + esc(img) + '" alt="" loading="lazy"></div>' : '') +
+      (img ? '<div class="r-thumb"><img src="' + esc(img) + '" alt="" loading="lazy"' + THUMB_ERR + '></div>' : '') +
       '<div class="r-card-title">' + esc(a.title) + '</div>' +
       '<div class="r-desc">' + esc(a.description || '') + '</div>' +
       '<div class="r-card-foot">' +
@@ -414,7 +423,7 @@
     if (!detailAlive()) return;
     var a = detail.item;
     var kind = linkKind(a.downloadUrl || '');
-    var img = G.safeUrl(a.imageUrl);
+    var img = thumbSrc(a.imageUrl);
     var w = a.relatedWebinarId ? webinarById(a.relatedWebinarId) : null;
     var webapp = a.kind === 'webapp';
     detail.m.el.innerHTML =
@@ -422,7 +431,7 @@
       '<h3 style="margin:0;word-break:break-word">' + esc(a.title) + (a.featured ? ' <span class="g-tag yellow" style="vertical-align:middle">추천</span>' : '') + '</h3>' +
       '<button class="g-btn secondary small" data-close>닫기</button></div>' +
       '<p class="g-item-body" style="margin:0 0 .75rem">' + esc(a.description || '') + '</p>' +
-      (img ? '<div class="r-thumb" style="margin-bottom:.75rem"><img src="' + esc(img) + '" alt="' + esc(a.title) + ' 대표 이미지"></div>' : '') +
+      (img ? '<div class="r-thumb" style="margin-bottom:.75rem"><img src="' + esc(img) + '" alt="' + esc(a.title) + ' 대표 이미지"' + THUMB_ERR + '></div>' : '') +
       '<div class="g-grid cols-2" style="margin-bottom:.5rem">' +
       '<div class="g-muted"><b style="color:#374151">자료 제작자:</b> ' + esc(a.author || '') + '</div>' +
       '<div class="g-muted"><b style="color:#374151">등록일:</b> ' + esc(G.fmtDate(a.createdAt)) + '</div>' +
@@ -615,7 +624,7 @@
       field('tags', '태그 (쉼표로 구분)', tagsOf(a).join(', '), { max: 300, ph: 'ChatGPT, AI, 수업설계, 가이드' }) +
       '<details style="margin-bottom:.9rem"' + ((a.grades && a.grades.length) || (a.subjects && a.subjects.length) || (a.activityTypes && a.activityTypes.length) || a.imageUrl ? ' open' : '') + '><summary class="g-label" style="cursor:pointer">분류·대표 이미지 <span class="g-muted">(선택)</span></summary>' +
       AXES.map(function (ax) { return '<div class="g-field"><span class="g-label">' + ax.label + '</span>' + checks(ax.key, ax.options, a[ax.key]) + '</div>'; }).join('') +
-      field('imageUrl', '대표 이미지 주소', a.imageUrl, { type: 'url', ph: 'https:// (선택)' }) + '</details>' +
+      field('imageUrl', '대표 이미지 주소', a.imageUrl, { type: 'url', ph: '이미지 파일 주소 또는 구글 드라이브 공유 링크 (선택)' }) + '</details>' +
       '<label class="g-check" style="margin-bottom:.75rem"><input type="checkbox" name="webapp" value="1"' + (webapp ? ' checked' : '') + '> 직접 만든 웹앱이에요</label>' +
       '<div class="r-webapp' + (webapp ? ' open' : '') + '" id="webappBox">' +
       area('problem', '해결하려는 교육 문제', a.problem) + area('features', '주요 기능', a.features) +
