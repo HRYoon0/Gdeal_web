@@ -887,8 +887,12 @@
           tdName.appendChild(tierBadge);
         }
         tdName.appendChild(document.createTextNode(a.name || ''));
-        tdName.addEventListener('click', function() { showDetail(activityItem); });
         tr.appendChild(tdName);
+        // 행 어디를 눌러도 상세 열기 — 활동명 칸이 좁아 잘 안 눌린다는 피드백. 버튼·링크는 각자 동작 유지
+        tr.addEventListener('click', function(e) {
+          if (e.target.closest('button, a')) return;
+          showDetail(activityItem);
+        });
 
         var tdCreator = document.createElement('td');
         tdCreator.textContent = a.creator || '';

@@ -256,8 +256,16 @@
   word-break: break-word;
 }
 
+.sharing-table tbody tr {
+  cursor: pointer;
+}
+
 .sharing-table tbody tr:hover {
   background-color: #f9fafb;
+}
+
+.sharing-table tbody tr:hover .activity-name {
+  color: #66ae7d;
 }
 
 .sharing-table .activity-name {
