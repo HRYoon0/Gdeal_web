@@ -1,5 +1,5 @@
 // G-DEAL PWA Service Worker
-const CACHE_NAME = 'gdeal-v36';
+const CACHE_NAME = 'gdeal-v37';
 
 // 알림 → 페이지 네비게이션 전달용 IndexedDB 큐
 //   iOS PWA가 백그라운드에서 종료된 상태로 알림이 오면, 페이지가 콜드 스타트 되는 동안
