@@ -11,13 +11,13 @@
   var URL = 'https://hanmadang.peace.re.kr/#/';
   var END = new Date('2026-12-19T17:00:00+09:00');
   var FS = 'https://firestore.googleapis.com/v1/projects/gdeal-hanmadang/databases/(default)/documents/';
-  var KEY = 'AIzaSyAm-uo720r9Lq4ZzbTgwVnCmrej6Yohf2w'; // 한마당 사이트에 공개된 웹 키
   if (new Date() >= END) return;
 
   var S = null, total = null, timer = null;
 
   function getDoc(path) {
-    return fetch(FS + path + '?key=' + KEY).then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+    // 공개 읽기 문서라 API 키 없이 읽힌다
+    return fetch(FS + path).then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
       .then(function (d) { return d.fields || {}; });
   }
   function t(f) { return f && f.timestampValue ? new Date(f.timestampValue) : null; }
